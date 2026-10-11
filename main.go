@@ -198,4 +198,10 @@ func parcJSON(path string) {
 	if err := json.Unmarshal(fileContent, &data); err != nil {
 		log.Fatal(err)
 	}
+	fmt.Printf("data: %v\n", data)
+	// stringData := make([]string, 0, len(data))
+	for key, value := range data {
+		args := []string{"", "", key, value.(string)}
+		writeDb(args)
+	}
 }
