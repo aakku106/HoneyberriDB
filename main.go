@@ -141,7 +141,9 @@ func displayHistory(history map[string][]string) {
 			log.Fatalln(err)
 		}
 		for _, v := range value {
-			fmt.Print(" --> " + v)
+			if _, err := fmt.Print(" --> " + v); err != nil {
+				log.Fatalln(err)
+			}
 		}
 	}
 }
