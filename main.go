@@ -86,4 +86,16 @@ func extractRecords(fileContent string) []string {
 {0.0.1-alpha.0:aakku,Very Good Boi}
 */
 
-func extractKeyValue(records []string) FinalData
+func extractKeyValue(records []string) FinalData {
+	var version, key, value string
+	for _, record := range records {
+		for ind, val := range record {
+			if val == ':' {
+				version = record[:ind]
+				fmt.Println(version)
+				break
+			}
+		}
+
+	}
+}
