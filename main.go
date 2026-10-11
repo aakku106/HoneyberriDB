@@ -50,17 +50,17 @@ func extractRecords(fileContent string) []string {
 
 	for _, ch := range fileContent {
 		switch ch {
-		case '{':
+		case '{': // Yo { start bhako
 			inBlock = true
 			current.Reset()
 			current.WriteRune(ch)
-		case '}':
+		case '}': // Yo } ie end bhako
 			if inBlock {
 				current.WriteRune(ch)
 				records = append(records, current.String())
 				inBlock = false
 			}
-		default:
+		default: // yo baki sab j ni xa
 			if inBlock {
 				current.WriteRune(ch)
 			}
