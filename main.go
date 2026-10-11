@@ -64,10 +64,10 @@ func extractRecords(fileContent string) []string {
 		case '{': // Yo { start bhako
 			inBlock = true
 			current.Reset()
-			current.WriteRune(ch)
+			// current.WriteRune(ch)
 		case '}': // Yo } ie end bhako
 			if inBlock {
-				current.WriteRune(ch)
+				// current.WriteRune(ch)
 				records = append(records, current.String())
 				inBlock = false
 			}
@@ -98,10 +98,12 @@ func sanitizeRecords(records []string) FinalData {
 		words := strings.FieldsFunc(record, func(r rune) bool {
 			return r == ':' || r == ','
 		})
-		if strings.TrimPrefix(words[0], "{") != SoftwareVersion {
+		// if strings.TrimPrefix(words[0], "{") != SoftwareVersion {
+		if words[0] != SoftwareVersion {
 			continue
 		}
-		data[words[1]] = strings.TrimSuffix(words[2], "}")
+		// data[words[1]] = strings.TrimSuffix(words[2], "}")
+		data[words[1]] = words[2]
 	}
 	return data
 }
