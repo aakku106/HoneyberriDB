@@ -138,7 +138,7 @@ func buildKeyHistory(records []string) map[string][]string {
 
 func displayHistory(history map[string][]string) {
 	for key, value := range history {
-		if _, err := fmt.Printf("\n\n%s:\n", key); err != nil {
+		if _, err := fmt.Printf("\n\n%s:\n└──", key); err != nil {
 			log.Fatalln(err)
 		}
 		for _, v := range value {
