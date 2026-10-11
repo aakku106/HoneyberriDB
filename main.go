@@ -68,3 +68,15 @@ func extractRecords(fileContent string) []string {
 	}
 	return records
 }
+
+// What Kind of data we get out of this func
+/*
+{0.0.1-alpha.0:Name,Adarasha Gaihre}
+{0.0.1-alpha.0:Name,Adarasha Gaihre}
+{0.0.1-alpha.0:age,20}
+{0.0.1-alpha.0:Name,Aakku}
+{0.0.1-alpha.0:suku,dead}
+{0.0.1-alpha.0:suku,dead}
+{0.0.1-alpha.0:fuku,dead}
+{0.0.1-alpha.0:aakku,Very Good Boi}
+*/
