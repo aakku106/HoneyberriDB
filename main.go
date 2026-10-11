@@ -119,6 +119,7 @@ func readAllHistory() {
 	records := extractRecords(string(fileContent))
 	history := buildKeyHistory(records)
 	displayHistory(history)
+	extractHistory(history)
 }
 
 func buildKeyHistory(records []string) map[string][]string {
@@ -143,6 +144,25 @@ func displayHistory(history map[string][]string) {
 		for _, v := range value {
 			if _, err := fmt.Print(" --> " + v); err != nil {
 				log.Fatalln(err)
+			}
+		}
+	}
+}
+
+func extractHistory(history map[string][]string) {
+	file, err := os.Create("history.aakku")
+	if err != nil {
+		log.Fatalln(err)
+	}
+	defer file.Close()
+	for key, value := range history {
+		if _, err := file.WriteString("\n" + key + "\n"); err != nil {
+			log.Fatalln(err)
+		} else {
+			for _, val := range value {
+				if _, err := file.WriteString(" --> " + val); err != nil {
+					log.Fatalln(err)
+				}
 			}
 		}
 	}
