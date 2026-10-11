@@ -22,6 +22,7 @@ func main() {
 	switch args[1] {
 	case "write", "w":
 
+		writeDb(args)
 		fmt.Printf("\nSuccessfully wrote Key:\t%s,\tValue:\t%s\tto database!\n\n", args[2], args[3])
 
 	case "read", "r":
@@ -30,7 +31,6 @@ func main() {
 			log.Fatalln(err)
 		}
 
-		writeDb(args)
 		fmt.Printf("data:\n%v\n\n", strings.Join(extractRecords(string(fileContent)), "\n"))
 	}
 }
