@@ -156,7 +156,7 @@ func extractHistory(history map[string][]string) {
 	}
 	defer file.Close()
 
-	if _, err := file.WriteString(SoftwareVersion + "{"); err != nil {
+	if _, err := file.WriteString(SoftwareVersion + ":"); err != nil {
 		log.Fatalln(err)
 	}
 
@@ -173,7 +173,5 @@ func extractHistory(history map[string][]string) {
 			log.Fatalln(err)
 		}
 	}
-	if _, err := file.WriteString("}"); err != nil {
-		log.Fatalln(err)
-	}
+
 }
