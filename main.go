@@ -89,11 +89,17 @@ func extractRecords(fileContent string) []string {
 */
 
 func sanitizeRecords(records []string) FinalData {
+	var version []string
+	var key []string
+	var value []string
 	for _, record := range records {
 		words := strings.FieldsFunc(record, func(r rune) bool {
 			return r == ':' || r == ','
 		})
 		fmt.Println(words)
+		version = append(version, words[0])
+		key = append(key, words[1])
+		value = append(value, words[2])
 	}
 	return nil
 }
