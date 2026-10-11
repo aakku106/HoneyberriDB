@@ -173,5 +173,4 @@ func extractHistory(history map[string][]string) {
 			log.Fatalln(err)
 		}
 	}
-
 }
