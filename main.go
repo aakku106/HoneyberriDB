@@ -9,7 +9,7 @@ import (
 const Version string = "0.0.1-alpha.0"
 const DbName string = "AakkusPersonalDb.aakku"
 
-var Data map[string]string
+var FinalData []map[string]string
 
 func main() {
 	args := os.Args
