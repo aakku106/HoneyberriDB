@@ -6,8 +6,10 @@ import (
 	"os"
 )
 
-const Version string = "0.0.1-alpha.0"
-const DbName string = "AakkusPersonalDb.aakku"
+const (
+	Version string = "0.0.1-alpha.0"
+	DbName  string = "AakkusPersonalDb.aakku"
+)
 
 var FinalData []map[string]string
 
