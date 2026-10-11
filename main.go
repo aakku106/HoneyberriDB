@@ -158,11 +158,10 @@ func extractHistory(history map[string][]string) {
 	for key, value := range history {
 		if _, err := file.WriteString("\n" + key + "\n"); err != nil {
 			log.Fatalln(err)
-		} else {
-			for _, val := range value {
-				if _, err := file.WriteString(" --> " + val); err != nil {
-					log.Fatalln(err)
-				}
+		}
+		for _, val := range value {
+			if _, err := file.WriteString(" --> " + val); err != nil {
+				log.Fatalln(err)
 			}
 		}
 	}
