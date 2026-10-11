@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 )
 
 const (
@@ -40,4 +41,30 @@ func main() {
 
 		fmt.Printf("data: %v\n", string(data))
 	}
+}
+
+func extractRecords(fileContent string) []string {
+	var records []string
+	var current strings.Builder
+	inBlock := false
+
+	for _, ch := range fileContent {
+		switch ch {
+		case '{':
+			inBlock = true
+			current.Reset()
+			current.WriteRune(ch)
+		case '}':
+			if inBlock {
+				current.WriteRune(ch)
+				records = append(records, current.String())
+				inBlock = false
+			}
+		default:
+			if inBlock {
+				current.WriteRune(ch)
+			}
+		}
+	}
+	return records
 }
