@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
@@ -28,6 +29,8 @@ func main() {
 		readAllDb()
 	case "history", "h":
 		readAllHistory()
+	case "parse", "p":
+		parcJSON("./data.json")
 	default:
 		fmt.Println("IndifinateBehavior")
 	}
@@ -55,7 +58,6 @@ func readAllDb() {
 	records := extractRecords(string(fileContent))
 	data := sanitizeRecords(records)
 	fmt.Println(data)
-
 }
 
 func extractRecords(fileContent string) []string {
@@ -173,4 +175,22 @@ func extractHistory(history map[string][]string) {
 			log.Fatalln(err)
 		}
 	}
+}
+
+func sanitizeJSON(records []byte) map[string]any {
+	data := make(map[string]any)
+	if err := json.Unmarshal(records, &data); err != nil {
+		log.Fatal(err)
+	}
+	return data
+}
+
+func parcJSON(path string) {
+
+	fileContent, err := os.ReadFile(path)
+	if err != nil {
+		log.Fatalf("failed to read file: %s", err)
+	}
+	data := sanitizeJSON(fileContent)
+	fmt.Printf("data: %v\n", data)
 }
