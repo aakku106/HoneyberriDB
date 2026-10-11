@@ -32,6 +32,8 @@ func main() {
 		}
 
 		// fmt.Printf("data:\n%v\n\n", strings.Join(extractRecords(string(fileContent)), "\n"))
+		records := extractRecords(string(fileContent))
+		sanitizeRecords(records)
 	}
 }
 
@@ -86,8 +88,7 @@ func extractRecords(fileContent string) []string {
 {0.0.1-alpha.0:aakku,Very Good Boi}
 */
 
-func extractKeyValue(records []string) FinalData {
-	// var version, key, value string
+func sanitizeRecords(records []string) FinalData {
 	for _, record := range records {
 		words := strings.FieldsFunc(record, func(r rune) bool {
 			return r == ':' || r == ','
