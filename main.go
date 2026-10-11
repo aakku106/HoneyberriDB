@@ -39,7 +39,7 @@ func main() {
 			log.Fatalln(err)
 		}
 
-		fmt.Printf("data: %v\n", extractRecords(string(fileContent)))
+		fmt.Printf("data:\n%v\n\n", strings.Join(extractRecords(string(fileContent)), "\n"))
 	}
 }
 
