@@ -21,16 +21,7 @@ func main() {
 	}
 	switch args[1] {
 	case "write", "w":
-		file, err := os.OpenFile(DbName, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-		if err != nil {
-			log.Fatalln(err)
-		}
-		defer file.Close()
 
-		record := fmt.Sprintf("{%s:%s,%s}", Version, args[2], args[3])
-		if _, err := file.WriteString(record); err != nil {
-			log.Fatalln(err)
-		}
 		fmt.Printf("\nSuccessfully wrote Key:\t%s,\tValue:\t%s\tto database!\n\n", args[2], args[3])
 
 	case "read", "r":
@@ -39,7 +30,21 @@ func main() {
 			log.Fatalln(err)
 		}
 
+		writeDb(args)
 		fmt.Printf("data:\n%v\n\n", strings.Join(extractRecords(string(fileContent)), "\n"))
+	}
+}
+
+func writeDb(args []string) {
+	file, err := os.OpenFile(DbName, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	defer file.Close()
+
+	record := fmt.Sprintf("{%s:%s,%s}", Version, args[2], args[3])
+	if _, err := file.WriteString(record); err != nil {
+		log.Fatalln(err)
 	}
 }
 
