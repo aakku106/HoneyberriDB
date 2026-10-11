@@ -33,7 +33,8 @@ func main() {
 
 		// fmt.Printf("data:\n%v\n\n", strings.Join(extractRecords(string(fileContent)), "\n"))
 		records := extractRecords(string(fileContent))
-		sanitizeRecords(records)
+		data := sanitizeRecords(records)
+		fmt.Println(data)
 	}
 }
 
@@ -90,15 +91,14 @@ func extractRecords(fileContent string) []string {
 
 func sanitizeRecords(records []string) FinalData {
 
-	filter := make(map[string]string)
+	data := make(map[string]string)
 	for _, record := range records {
 		words := strings.FieldsFunc(record, func(r rune) bool {
 			return r == ':' || r == ','
 		})
 
-		filter[words[1]] = strings.TrimSuffix(words[2], "}")
-		fmt.Println(filter)
+		data[words[1]] = strings.TrimSuffix(words[2], "}")
 
 	}
-	return nil
+	return data
 }
