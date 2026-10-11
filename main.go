@@ -12,7 +12,7 @@ const (
 	DbName          string = "AakkusPersonalDb.aakku"
 )
 
-type FinalData []map[string]string
+type FinalData map[string]string
 
 func main() {
 	args := os.Args
