@@ -87,15 +87,12 @@ func extractRecords(fileContent string) []string {
 */
 
 func extractKeyValue(records []string) FinalData {
-	var version, key, value string
+	// var version, key, value string
 	for _, record := range records {
-		for ind, val := range record {
-			if val == ':' {
-				version = record[:ind]
-				fmt.Println(version)
-				break
-			}
-		}
-
+		words := strings.FieldsFunc(record, func(r rune) bool {
+			return r == ':' || r == ','
+		})
+		fmt.Println(words)
 	}
+	return nil
 }
