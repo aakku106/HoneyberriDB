@@ -31,7 +31,6 @@ func main() {
 			log.Fatalln(err)
 		}
 
-		// fmt.Printf("data:\n%v\n\n", strings.Join(extractRecords(string(fileContent)), "\n"))
 		records := extractRecords(string(fileContent))
 		data := sanitizeRecords(records)
 		fmt.Println(data)
@@ -90,15 +89,12 @@ func extractRecords(fileContent string) []string {
 */
 
 func sanitizeRecords(records []string) FinalData {
-
 	data := make(map[string]string)
 	for _, record := range records {
 		words := strings.FieldsFunc(record, func(r rune) bool {
 			return r == ':' || r == ','
 		})
-
 		data[words[1]] = strings.TrimSuffix(words[2], "}")
-
 	}
 	return data
 }
