@@ -25,14 +25,7 @@ func main() {
 		fmt.Printf("\nSuccessfully wrote Key:\t%s,\tValue:\t%s\tto database!\n\n", args[2], args[3])
 
 	case "read", "r":
-		fileContent, err := os.ReadFile(DbName)
-		if err != nil {
-			log.Fatalln(err)
-		}
-
-		records := extractRecords(string(fileContent))
-		data := sanitizeRecords(records)
-		fmt.Println(data)
+		readAllDb()
 	}
 }
 
@@ -47,6 +40,18 @@ func writeDb(args []string) {
 	if _, err := file.WriteString(record); err != nil {
 		log.Fatalln(err)
 	}
+}
+
+func readAllDb() {
+	fileContent, err := os.ReadFile(DbName)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	records := extractRecords(string(fileContent))
+	data := sanitizeRecords(records)
+	fmt.Println(data)
+
 }
 
 func extractRecords(fileContent string) []string {
