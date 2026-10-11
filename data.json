@@ -4,5 +4,11 @@
   "alive":"true",
   "aim":"die",
   "hobby":"literally Everything",
+  "skills": ["Go","Python", "JavaScript"],
+"address": {
+    "city": "New York",
+    "zipCode": 10001
+  },
+"brain": null,
   "height":170
 }
