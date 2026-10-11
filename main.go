@@ -202,7 +202,7 @@ func parcJSON(path string) {
 	args := make([]string, 4)
 	for key, value := range data {
 		args[2] = key
-		args[3] = value.(string)
+		args[3] = fmt.Sprintf("%v", value)
 		writeDb(args)
 	}
 }
