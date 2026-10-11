@@ -8,8 +8,8 @@ import (
 )
 
 const (
-	Version string = "0.0.1-alpha.0"
-	DbName  string = "AakkusPersonalDb.aakku"
+	SoftwareVersion string = "0.0.1-alpha.0"
+	DbName          string = "AakkusPersonalDb.aakku"
 )
 
 type FinalData []map[string]string
@@ -42,7 +42,7 @@ func writeDb(args []string) {
 	}
 	defer file.Close()
 
-	record := fmt.Sprintf("{%s:%s,%s}", Version, args[2], args[3])
+	record := fmt.Sprintf("{%s:%s,%s}", SoftwareVersion, args[2], args[3])
 	if _, err := file.WriteString(record); err != nil {
 		log.Fatalln(err)
 	}
