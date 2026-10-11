@@ -57,7 +57,7 @@ func readAllDb() {
 
 	records := extractRecords(string(fileContent))
 	data := sanitizeRecords(records)
-	fmt.Println(data)
+	displayDb(data)
 }
 
 func extractRecords(fileContent string) []string {
@@ -110,6 +110,18 @@ func sanitizeRecords(records []string) FinalData {
 		data[words[1]] = words[2]
 	}
 	return data
+}
+
+func displayDb(data map[string]string) {
+	for key, value := range data {
+		if _, err := fmt.Printf("\n\n%s:\n└──", key); err != nil {
+			log.Fatalln(err)
+		}
+		if _, err := fmt.Print(" --> " + value); err != nil {
+			log.Fatalln(err)
+		}
+
+	}
 }
 
 func readAllHistory() {
