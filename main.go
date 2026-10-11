@@ -34,12 +34,12 @@ func main() {
 		fmt.Printf("\nSuccessfully wrote Key:\t%s,\tValue:\t%s\tto database!\n\n", args[2], args[3])
 
 	case "read", "r":
-		data, err := os.ReadFile(DbName)
+		fileContent, err := os.ReadFile(DbName)
 		if err != nil {
 			log.Fatalln(err)
 		}
 
-		fmt.Printf("data: %v\n", string(data))
+		fmt.Printf("data: %v\n", extractRecords(string(fileContent)))
 	}
 }
 
