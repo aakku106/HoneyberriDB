@@ -26,6 +26,10 @@ func main() {
 
 	case "read", "r":
 		readAllDb()
+	case "history", "h":
+		readAllHistory()
+	default:
+		fmt.Println("IndifinateBehavior")
 	}
 }
 
@@ -106,4 +110,28 @@ func sanitizeRecords(records []string) FinalData {
 		data[words[1]] = words[2]
 	}
 	return data
+}
+
+func readAllHistory() {
+	fileContent, err := os.ReadFile(DbName)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	records := extractRecords(string(fileContent))
+	buildKeyHistory(records)
+
+}
+func buildKeyHistory(records []string) map[string][]string {
+	history := make(map[string][]string)
+	for _, record := range records {
+		words := strings.FieldsFunc(record, func(r rune) bool {
+			return r == ':' || r == ','
+		})
+		if words[0] != SoftwareVersion {
+			continue
+		}
+		history[words[1]] = append(history[words[1]], words[2])
+	}
+	return history
 }
