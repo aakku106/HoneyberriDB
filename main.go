@@ -12,7 +12,7 @@ const (
 	DbName  string = "AakkusPersonalDb.aakku"
 )
 
-var FinalData []map[string]string
+type FinalData []map[string]string
 
 func main() {
 	args := os.Args
@@ -85,3 +85,5 @@ func extractRecords(fileContent string) []string {
 {0.0.1-alpha.0:fuku,dead}
 {0.0.1-alpha.0:aakku,Very Good Boi}
 */
+
+func extractKeyValue(records []string) FinalData
