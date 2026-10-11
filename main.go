@@ -119,8 +119,8 @@ func readAllHistory() {
 	records := extractRecords(string(fileContent))
 	history := buildKeyHistory(records)
 	displayHistory(history)
-
 }
+
 func buildKeyHistory(records []string) map[string][]string {
 	history := make(map[string][]string)
 	for _, record := range records {
@@ -134,9 +134,12 @@ func buildKeyHistory(records []string) map[string][]string {
 	}
 	return history
 }
+
 func displayHistory(history map[string][]string) {
 	for key, value := range history {
-		fmt.Printf("\n\n%s:\n", key)
+		if _, err := fmt.Printf("\n\n%s:\n", key); err != nil {
+			log.Fatalln(err)
+		}
 		for _, v := range value {
 			fmt.Print(" --> " + v)
 		}
