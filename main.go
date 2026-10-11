@@ -26,9 +26,11 @@ func main() {
 		}
 		defer file.Close()
 
-		if _, err := file.WriteString("{" + Version + ":" + args[2] + "," + args[3] + "}"); err != nil {
+		record := fmt.Sprintf("{%s:%s,%s}", Version, args[2], args[3])
+		if _, err := file.WriteString(record); err != nil {
 			log.Fatalln(err)
 		}
+		fmt.Println("Successfully wrote record to database!")
 
 	case "read", "r":
 		data, err := os.ReadFile(DbName)
