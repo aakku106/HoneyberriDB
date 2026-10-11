@@ -176,5 +176,4 @@ func extractHistory(history map[string][]string) {
 	if _, err := file.WriteString("}"); err != nil {
 		log.Fatalln(err)
 	}
-
 }
