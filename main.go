@@ -199,9 +199,10 @@ func parcJSON(path string) {
 		log.Fatal(err)
 	}
 	fmt.Printf("data: %v\n", data)
-	// stringData := make([]string, 0, len(data))
+	args := make([]string, 4)
 	for key, value := range data {
-		args := []string{"", "", key, value.(string)}
+		args[2] = key
+		args[3] = value.(string)
 		writeDb(args)
 	}
 }
