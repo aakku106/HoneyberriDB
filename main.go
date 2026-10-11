@@ -102,11 +102,9 @@ func sanitizeRecords(records []string) FinalData {
 		words := strings.FieldsFunc(record, func(r rune) bool {
 			return r == ':' || r == ','
 		})
-		// if strings.TrimPrefix(words[0], "{") != SoftwareVersion {
 		if words[0] != SoftwareVersion {
 			continue
 		}
-		// data[words[1]] = strings.TrimSuffix(words[2], "}")
 		data[words[1]] = words[2]
 	}
 	return data
