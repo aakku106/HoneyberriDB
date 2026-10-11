@@ -177,20 +177,13 @@ func extractHistory(history map[string][]string) {
 	}
 }
 
-func sanitizeJSON(records []byte) map[string]any {
-	data := make(map[string]any)
-	if err := json.Unmarshal(records, &data); err != nil {
-		log.Fatal(err)
-	}
-	return data
-}
-
 func parcJSON(path string) {
-
 	fileContent, err := os.ReadFile(path)
 	if err != nil {
 		log.Fatalf("failed to read file: %s", err)
 	}
-	data := sanitizeJSON(fileContent)
-	fmt.Printf("data: %v\n", data)
+	data := make(map[string]any)
+	if err := json.Unmarshal(fileContent, &data); err != nil {
+		log.Fatal(err)
+	}
 }
