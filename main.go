@@ -30,7 +30,7 @@ func main() {
 		if _, err := file.WriteString(record); err != nil {
 			log.Fatalln(err)
 		}
-		fmt.Println("Successfully wrote record to database!")
+		fmt.Printf("\nSuccessfully wrote record:%s to database!\n\n", record)
 
 	case "read", "r":
 		data, err := os.ReadFile(DbName)
