@@ -10,7 +10,7 @@ import (
 
 const (
 	SoftwareVersion string = "0.0.1-alpha.0"
-	DbName          string = "AakkusPersonalDb.aakku"
+	WALname         string = "HoneyBerriDb" + SoftwareVersion + ".aakku"
 )
 
 type FinalData map[string]string
