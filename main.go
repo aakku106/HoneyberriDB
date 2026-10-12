@@ -165,7 +165,7 @@ func displayHistory(history map[string][]string) {
 }
 
 func extractHistory(history map[string][]string) {
-	file, err := os.Create("history.aakku")
+	file, err := os.Create("History" + SoftwareVersion + ".aakku")
 	if err != nil {
 		log.Fatalln(err)
 	}
