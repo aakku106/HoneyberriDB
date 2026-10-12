@@ -38,7 +38,7 @@ func main() {
 }
 
 func writeDb(args []string) {
-	file, err := os.OpenFile(DbName, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	file, err := os.OpenFile(WALname, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -51,7 +51,7 @@ func writeDb(args []string) {
 }
 
 func readAllDb() {
-	fileContent, err := os.ReadFile(DbName)
+	fileContent, err := os.ReadFile(WALname)
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -126,7 +126,7 @@ func displayDb(data map[string]string) {
 }
 
 func readAllHistory() {
-	fileContent, err := os.ReadFile(DbName)
+	fileContent, err := os.ReadFile(WALname)
 	if err != nil {
 		log.Fatalln(err)
 	}
