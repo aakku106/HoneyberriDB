@@ -61,6 +61,8 @@ func readAllDb() {
 	displayDb(data)
 }
 
+// Removes curly brasses "{}" from all values in WAL and
+// Returns slice of string []string
 func extractRecords(fileContent string) []string {
 	var records []string
 	var current strings.Builder
@@ -99,13 +101,26 @@ func extractRecords(fileContent string) []string {
 {0.0.1-alpha.0:aakku,Very Good Boi}
 */
 
+// TODO: fix logic tummrow to read : after 1
 func sanitizeRecords(records []string) FinalData {
 	data := make(map[string]string)
 	for _, record := range records {
+
 		words := strings.FieldsFunc(record, func(r rune) bool {
-			return r == ':'
+
+			var done bool = false
+			if !done {
+				if r == ':' {
+					done = true
+					return true
+				}
+			}
+
+			return false
 		})
+
 		data[words[0]] = words[1]
+
 	}
 	return data
 }
