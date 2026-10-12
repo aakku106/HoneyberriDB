@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	SoftwareVersion string = "0.0.1-alpha.0"
+	SoftwareVersion string = "0.0.1-alpha.1"
 	DBname          string = "HoneyberriDB"
 	WALname         string = DBname + SoftwareVersion + ".aakku"
 )
@@ -44,7 +44,7 @@ func writeDb(args []string) {
 	}
 	defer file.Close()
 
-	record := fmt.Sprintf("{%s:%s,%s}", SoftwareVersion, args[2], args[3])
+	record := fmt.Sprintf("{%s:%s}", args[2], args[3])
 	if _, err := file.WriteString(record); err != nil {
 		log.Fatalln(err)
 	}
