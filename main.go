@@ -10,8 +10,8 @@ import (
 
 const (
 	SoftwareVersion string = "0.0.1-alpha.0"
-	DBName          string = "HoneyberriDB"
-	WALname         string = DBName + SoftwareVersion + ".aakku"
+	DBname          string = "HoneyberriDB"
+	WALname         string = DBname + SoftwareVersion + ".aakku"
 )
 
 type FinalData map[string]string
