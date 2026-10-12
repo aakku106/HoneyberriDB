@@ -140,7 +140,7 @@ func buildKeyHistory(records []string) map[string][]string {
 	history := make(map[string][]string)
 	for _, record := range records {
 		words := strings.FieldsFunc(record, func(r rune) bool {
-			return r == ':' || r == ','
+			return r == ':'
 		})
 		if words[0] != SoftwareVersion {
 			continue
