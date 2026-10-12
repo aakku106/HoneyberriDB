@@ -121,7 +121,6 @@ func displayDb(data map[string]string) {
 		if _, err := fmt.Print(" --> " + value); err != nil {
 			log.Fatalln(err)
 		}
-
 	}
 }
 
