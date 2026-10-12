@@ -105,7 +105,7 @@ func sanitizeRecords(records []string) FinalData {
 		words := strings.FieldsFunc(record, func(r rune) bool {
 			return r == ':'
 		})
-		data[words[1]] = words[2]
+		data[words[0]] = words[1]
 	}
 	return data
 }
@@ -139,7 +139,7 @@ func buildKeyHistory(records []string) map[string][]string {
 		words := strings.FieldsFunc(record, func(r rune) bool {
 			return r == ':'
 		})
-		history[words[1]] = append(history[words[1]], words[2])
+		history[words[0]] = append(history[words[0]], words[1])
 	}
 	return history
 }
