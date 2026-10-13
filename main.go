@@ -57,7 +57,7 @@ func main() {
 		wal.readAllWAL()
 
 	case "history", "h":
-		readAllHistory()
+		wal.readAllHistory()
 
 	case "parse", "p":
 		wal.parcJSON("./data.json")
@@ -183,10 +183,29 @@ func displayDb(data map[string]string) {
 	}
 }
 
-func readAllHistory() {
-	fileContent, err := os.ReadFile(WALname)
+func (wal *HoneyberriWAL) readAllHistory() {
+	wal.mu.Lock()
+	defer wal.mu.Unlock()
+
+	_, err := wal.file.Seek(0, 0)
 	if err != nil {
-		log.Fatalln(err)
+		log.Fatalln("failed to seek file:", err)
+	}
+
+	fileInfo, err := wal.file.Stat()
+	if err != nil {
+		log.Fatalln("failed to get file stats:", err)
+	}
+
+	if fileInfo.Size() == 0 {
+		fmt.Println("WAL is empty.")
+		return
+	}
+
+	fileContent := make([]byte, fileInfo.Size())
+	_, err = wal.file.Read(fileContent)
+	if err != nil {
+		log.Fatalln("failed to read WAL:", err)
 	}
 
 	records := extractRecords(string(fileContent))
