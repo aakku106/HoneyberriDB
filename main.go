@@ -54,7 +54,7 @@ func main() {
 		fmt.Printf("\nSuccessfully wrote Key:\t%s,\tValue:\t%s\tto database!\n\n", args[2], args[3])
 
 	case "read", "r":
-		readAllWAL()
+		wal.readAllWAL()
 
 	case "history", "h":
 		readAllHistory()
@@ -80,7 +80,8 @@ func (wal *HoneyberriWAL) writeWAL(args []string) {
 	wal.mu.Unlock()
 }
 
-func readAllWAL() {
+func (wal *HoneyberriWAL) readAllWAL() {
+	wal.mu.Lock()
 	fileContent, err := os.ReadFile(WALname)
 	if err != nil {
 		log.Fatalln(err)
