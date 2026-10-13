@@ -93,10 +93,10 @@ func (wal *HoneyberriWAL) writeWAL(args []string) {
 	record := fmt.Sprintf("%s %s %s ;;%s;; %s %s\n", tapari, duna, key, value, time.Now().UTC(), hashedKey)
 
 	wal.mu.Lock()
+	defer wal.mu.Unlock()
 	if _, err := wal.file.WriteString(record); err != nil {
 		log.Fatalln(err)
 	}
-	wal.mu.Unlock()
 }
 
 func (wal *HoneyberriWAL) ReadWAL() {
