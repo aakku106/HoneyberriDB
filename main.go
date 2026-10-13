@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	SoftwareVersion string = "0.0.1-alpha.1"
+	SoftwareVersion string = "0.0.1-alpha.2"
 	DBname          string = "HoneyberriDB"
 	WALname         string = DBname + SoftwareVersion + ".aakku"
 )
