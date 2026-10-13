@@ -69,7 +69,23 @@ func main() {
 
 func (wal *HoneyberriWAL) writeWAL(args []string) {
 
-	record := fmt.Sprintf("{%s:%s}", args[2], args[3])
+	tapari := args[2]
+	duna := args[3]
+	key := args[4]
+	value := args[5]
+
+	keyHasher := fnv.New128a()
+
+	// io.WriteString handles the string-to-byte stream conversion efficiently under the hood
+	_, err := io.WriteString(keyHasher, key)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to write to hasher: %v\n", err)
+		os.Exit(1)
+	}
+
+	// . Compute the final hash value (Sum(nil) appends to nil and returns a 16-byte slice)
+	hashedKey := keyHasher.Sum(nil)
+	record := fmt.Sprintf("%s %s %s %s %s\n", tapari, duna, key, value, hashedKey)
 
 	wal.mu.Lock()
 	if _, err := wal.file.WriteString(record); err != nil {
