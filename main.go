@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"hash/fnv"
@@ -78,16 +79,17 @@ func (wal *HoneyberriWAL) writeWAL(args []string) {
 	value := strings.TrimSpace(args[5])
 
 	keyHasher := fnv.New128a()
-
-	// io.WriteString handles the string-to-byte stream conversion efficiently under the hood
 	_, err := io.WriteString(keyHasher, key)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to write to hasher: %v\n", err)
 		os.Exit(1)
 	}
 
-	// . Compute the final hash value (Sum(nil) appends to nil and returns a 16-byte slice)
-	hashedKey := keyHasher.Sum(nil)
+	rawHash := keyHasher.Sum(nil)
+
+	// Encode bytes into a safe, readable Hex string
+	hashedKey := hex.EncodeToString(rawHash)
+
 	record := fmt.Sprintf("%s %s %s ;;%s;; %s %s\n", tapari, duna, key, value, time.Now().UTC(), hashedKey)
 
 	wal.mu.Lock()
