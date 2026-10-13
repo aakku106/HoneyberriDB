@@ -78,16 +78,16 @@ func (wal *HoneyberriWAL) writeWAL(args []string) {
 	key := strings.TrimSpace(args[4])
 	value := strings.TrimSpace(args[5])
 
-	keyHasher := fnv.New128a()
-	_, err := io.WriteString(keyHasher, key)
+	payload := fmt.Sprintf(";;%s;;%s;;%s;;%s;;", tapari, duna, key, value)
+
+	payloadHasher := fnv.New128a()
+	_, err := io.WriteString(payloadHasher, payload)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to write to hasher: %v\n", err)
 		os.Exit(1)
 	}
 
-	rawHash := keyHasher.Sum(nil)
-
-	// Encode bytes into a safe, readable Hex string
+	rawHash := payloadHasher.Sum(nil)
 	checkSum := hex.EncodeToString(rawHash)
 
 	record := fmt.Sprintf("%s %s %s ;;%s;; %s %s\n", tapari, duna, key, value, time.Now().UTC(), checkSum)
