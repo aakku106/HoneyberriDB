@@ -23,11 +23,11 @@ func main() {
 	}
 	switch args[1] {
 	case "write", "w":
-		writeDb(args)
+		writeWAL(args)
 		fmt.Printf("\nSuccessfully wrote Key:\t%s,\tValue:\t%s\tto database!\n\n", args[2], args[3])
 
 	case "read", "r":
-		readAllDb()
+		readAllWAL()
 	case "history", "h":
 		readAllHistory()
 	case "parse", "p":
@@ -37,7 +37,7 @@ func main() {
 	}
 }
 
-func writeDb(args []string) {
+func writeWAL(args []string) {
 	file, err := os.OpenFile(WALname, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		log.Fatalln(err)
@@ -50,7 +50,7 @@ func writeDb(args []string) {
 	}
 }
 
-func readAllDb() {
+func readAllWAL() {
 	fileContent, err := os.ReadFile(WALname)
 	if err != nil {
 		log.Fatalln(err)
@@ -209,6 +209,6 @@ func parcJSON(path string) {
 	for key, value := range data {
 		args[2] = key
 		args[3] = fmt.Sprintf("%v", value)
-		writeDb(args)
+		writeWAL(args)
 	}
 }
