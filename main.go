@@ -38,6 +38,12 @@ func OpenWAL() (*HoneyberriWAL, error) {
 type FinalData map[string]string
 
 func main() {
+	wal, err := OpenWAL()
+	if err != nil {
+		log.Fatalln(err)
+	}
+	defer wal.file.Close()
+
 	args := os.Args
 	if len(args) < 2 {
 		log.Fatalln("Need to be more than 3 to write and 3 ot read ")
