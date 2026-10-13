@@ -68,17 +68,11 @@ func main() {
 var WriteWalLock sync.RWMutex
 
 func (wal *HoneyberriWAL) writeWAL(args []string) {
-	WriteWalLock.Lock()
-
-	file, err := os.OpenFile(WALname, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		log.Fatalln(err)
-	}
-	defer file.Close()
 
 	record := fmt.Sprintf("{%s:%s}", args[2], args[3])
-	WriteWalLock.Unlock()
-	if _, err := file.WriteString(record); err != nil {
+
+	wal.mu.Lock()
+	if _, err := wal.file.WriteString(record); err != nil {
 		log.Fatalln(err)
 	}
 	wal.mu.Unlock()
