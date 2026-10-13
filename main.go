@@ -144,12 +144,19 @@ func readAllHistory() {
 
 func buildKeyHistory(records []string) map[string][]string {
 	history := make(map[string][]string)
+
 	for _, record := range records {
-		words := strings.FieldsFunc(record, func(r rune) bool {
-			return r == ':'
-		})
-		history[words[0]] = append(history[words[0]], words[1])
+		// Cut splits the string at the *very first* occurrence of ":"
+		key, value, found := strings.Cut(record, ":")
+
+		if found {
+			trimmedKey := strings.TrimSpace(key)
+			trimmedVal := strings.TrimSpace(value)
+
+			history[trimmedKey] = append(history[trimmedKey], trimmedVal)
+		}
 	}
+
 	return history
 }
 
@@ -181,6 +188,9 @@ func extractHistory(history map[string][]string) {
 			if _, err := file.WriteString(val + ","); err != nil {
 				log.Fatalln(err)
 			}
+		}
+		if _, err := file.WriteString("}"); err != nil {
+			log.Fatalln(err)
 		}
 	}
 }
