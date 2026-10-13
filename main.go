@@ -50,7 +50,7 @@ func main() {
 	}
 	switch args[1] {
 	case "write", "w":
-		writeWAL(args)
+		wal.writeWAL(args)
 		fmt.Printf("\nSuccessfully wrote Key:\t%s,\tValue:\t%s\tto database!\n\n", args[2], args[3])
 
 	case "read", "r":
@@ -58,7 +58,8 @@ func main() {
 	case "history", "h":
 		readAllHistory()
 	case "parse", "p":
-		parcJSON("./data.json")
+		wal.parcJSON("./data.json")
+
 	default:
 		fmt.Println("IndifinateBehavior")
 	}
@@ -66,7 +67,7 @@ func main() {
 
 var WriteWalLock sync.RWMutex
 
-func writeWAL(args []string) {
+func (wal *HoneyberriWAL) writeWAL(args []string) {
 	WriteWalLock.Lock()
 
 	file, err := os.OpenFile(WALname, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
@@ -80,6 +81,7 @@ func writeWAL(args []string) {
 	if _, err := file.WriteString(record); err != nil {
 		log.Fatalln(err)
 	}
+	wal.mu.Unlock()
 }
 
 func readAllWAL() {
@@ -227,7 +229,7 @@ func extractHistory(history map[string][]string) {
 	}
 }
 
-func parcJSON(path string) {
+func (wal *HoneyberriWAL) parcJSON(path string) {
 	fileContent, err := os.ReadFile(path)
 	if err != nil {
 		log.Fatalf("failed to read file: %s", err)
@@ -241,6 +243,6 @@ func parcJSON(path string) {
 	for key, value := range data {
 		args[2] = key
 		args[3] = fmt.Sprintf("%v", value)
-		writeWAL(args)
+		wal.writeWAL(args)
 	}
 }
