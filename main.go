@@ -3,6 +3,8 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"hash/fnv"
+	"io"
 	"log"
 	"os"
 	"strings"
