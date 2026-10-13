@@ -101,27 +101,21 @@ func extractRecords(fileContent string) []string {
 {0.0.1-alpha.0:aakku,Very Good Boi}
 */
 
-// TODO: fix logic tummrow to read : after 1
 func sanitizeRecords(records []string) FinalData {
 	data := make(map[string]string)
+
 	for _, record := range records {
+		// Cut splits the string at the *very first* occurrence of ":"
+		key, value, found := strings.Cut(record, ":")
 
-		words := strings.FieldsFunc(record, func(r rune) bool {
+		if found {
+			trimmedKey := strings.TrimSpace(key)
+			trimmedVal := strings.TrimSpace(value)
 
-			var done bool = false
-			if !done {
-				if r == ':' {
-					done = true
-					return true
-				}
-			}
-
-			return false
-		})
-
-		data[words[0]] = words[1]
-
+			data[trimmedKey] = trimmedVal
+		}
 	}
+
 	return data
 }
 
