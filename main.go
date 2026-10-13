@@ -48,6 +48,7 @@ func main() {
 	if len(args) < 2 {
 		log.Fatalln("Need to be more than 3 to write and 3 ot read ")
 	}
+
 	switch args[1] {
 	case "write", "w":
 		wal.writeWAL(args)
@@ -55,8 +56,10 @@ func main() {
 
 	case "read", "r":
 		readAllWAL()
+
 	case "history", "h":
 		readAllHistory()
+
 	case "parse", "p":
 		wal.parcJSON("./data.json")
 
