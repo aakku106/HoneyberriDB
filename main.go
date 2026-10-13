@@ -45,7 +45,7 @@ func main() {
 
 	args := os.Args
 	if len(args) < 2 {
-		log.Fatalln("Need to be more than 3 to write and 3 ot read ")
+		log.Fatalln("Need to be more than 1 args to write,read,history,parc")
 	}
 
 	switch args[1] {
