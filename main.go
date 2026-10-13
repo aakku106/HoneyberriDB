@@ -88,9 +88,9 @@ func (wal *HoneyberriWAL) writeWAL(args []string) {
 	rawHash := keyHasher.Sum(nil)
 
 	// Encode bytes into a safe, readable Hex string
-	hashedKey := hex.EncodeToString(rawHash)
+	checkSum := hex.EncodeToString(rawHash)
 
-	record := fmt.Sprintf("%s %s %s ;;%s;; %s %s\n", tapari, duna, key, value, time.Now().UTC(), hashedKey)
+	record := fmt.Sprintf("%s %s %s ;;%s;; %s %s\n", tapari, duna, key, value, time.Now().UTC(), checkSum)
 
 	wal.mu.Lock()
 	defer wal.mu.Unlock()
