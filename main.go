@@ -54,7 +54,7 @@ func main() {
 		fmt.Printf("\nSuccessfully wrote Key:\t%s,\tValue:\t%s\tto database!\n\n", args[2], args[3])
 
 	case "read", "r":
-		wal.readAllWAL()
+		wal.ReadWAL()
 
 	case "history", "h":
 		wal.readAllHistory()
@@ -80,7 +80,15 @@ func (wal *HoneyberriWAL) writeWAL(args []string) {
 	wal.mu.Unlock()
 }
 
-func (wal *HoneyberriWAL) readAllWAL() {
+func (wal *HoneyberriWAL) ReadWAL() {
+	fileContent := wal.readAllWAL()
+
+	records := extractRecords(string(fileContent))
+	data := sanitizeRecords(records)
+	displayDb(data)
+}
+
+func (wal *HoneyberriWAL) readAllWAL() []byte {
 	wal.mu.Lock()
 	defer wal.mu.Unlock()
 
@@ -99,7 +107,7 @@ func (wal *HoneyberriWAL) readAllWAL() {
 	// If the file is empty, handle it gracefully
 	if fileInfo.Size() == 0 {
 		fmt.Println("WAL is empty.")
-		return
+		return nil
 	}
 
 	// 3. Read all the bytes from the open file handle into a buffer
@@ -109,9 +117,7 @@ func (wal *HoneyberriWAL) readAllWAL() {
 		log.Fatalln("failed to read WAL:", err)
 	}
 
-	records := extractRecords(string(fileContent))
-	data := sanitizeRecords(records)
-	displayDb(data)
+	return fileContent
 }
 
 // Removes curly brasses "{}" from all values in WAL and
