@@ -22,7 +22,6 @@ type HoneyberriWAL struct {
 }
 
 func OpenWAL() (*HoneyberriWAL, error) {
-
 	// Open the WAL ant let it be opean
 	file, err := os.OpenFile(WALname, os.O_APPEND|os.O_CREATE|os.O_RDWR, 0644)
 	if err != nil {
