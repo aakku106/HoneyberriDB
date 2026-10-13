@@ -9,6 +9,7 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"time"
 )
 
 const (
@@ -71,10 +72,10 @@ func main() {
 
 func (wal *HoneyberriWAL) writeWAL(args []string) {
 
-	tapari := args[2]
-	duna := args[3]
-	key := args[4]
-	value := args[5]
+	tapari := strings.TrimSpace(args[2])
+	duna := strings.TrimSpace(args[3])
+	key := strings.TrimSpace(args[4])
+	value := strings.TrimSpace(args[5])
 
 	keyHasher := fnv.New128a()
 
@@ -87,7 +88,7 @@ func (wal *HoneyberriWAL) writeWAL(args []string) {
 
 	// . Compute the final hash value (Sum(nil) appends to nil and returns a 16-byte slice)
 	hashedKey := keyHasher.Sum(nil)
-	record := fmt.Sprintf("%s %s %s %s %s\n", tapari, duna, key, value, hashedKey)
+	record := fmt.Sprintf("%s %s %s ;;%s;; %s %s\n", tapari, duna, key, value, time.Now().UTC(), hashedKey)
 
 	wal.mu.Lock()
 	if _, err := wal.file.WriteString(record); err != nil {
