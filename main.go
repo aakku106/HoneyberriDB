@@ -67,8 +67,6 @@ func main() {
 	}
 }
 
-var WriteWalLock sync.RWMutex
-
 func (wal *HoneyberriWAL) writeWAL(args []string) {
 
 	record := fmt.Sprintf("{%s:%s}", args[2], args[3])
