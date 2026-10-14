@@ -105,8 +105,8 @@ func (wal *HoneyberriWAL) writeWAL(args []string) {
 }
 
 type Record struct {
-	DB        string
-	Bucket    string
+	Tapari    string
+	Duna      string
 	Key       string
 	Value     string
 	Timestamp time.Time
