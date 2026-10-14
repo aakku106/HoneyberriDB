@@ -162,47 +162,6 @@ func (wal *HoneyberriWAL) readAllWAL() []byte {
 	return fileContent
 }
 
-// Depricated
-// Removes curly brasses "{}" from all values in WAL and
-// Returns slice of string []string
-func extractRecords(fileContent string) []string {
-	var records []string
-	var current strings.Builder
-	inBlock := false
-
-	for _, ch := range fileContent {
-		switch ch {
-		case '{': // Yo { start bhako
-			inBlock = true
-			current.Reset()
-			// current.WriteRune(ch)
-		case '}': // Yo } ie end bhako
-			if inBlock {
-				// current.WriteRune(ch)
-				records = append(records, current.String())
-				inBlock = false
-			}
-		default: // yo baki sab j ni xa
-			if inBlock {
-				current.WriteRune(ch)
-			}
-		}
-	}
-	return records
-}
-
-// What Kind of data we get out of this func
-/*
-{0.0.1-alpha.0:Name,Adarasha Gaihre}
-{0.0.1-alpha.0:Name,Adarasha Gaihre}
-{0.0.1-alpha.0:age,20}
-{0.0.1-alpha.0:Name,Aakku}
-{0.0.1-alpha.0:suku,dead}
-{0.0.1-alpha.0:suku,dead}
-{0.0.1-alpha.0:fuku,dead}
-{0.0.1-alpha.0:aakku,Very Good Boi}
-*/
-
 type state map[string]map[string]map[string]Record // db -> bucket -> key -> latest
 
 func (wal *HoneyberriWAL) replay() (state, int, error) {
