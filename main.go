@@ -129,39 +129,6 @@ func (wal *HoneyberriWAL) ReadWAL() {
 	}
 }
 
-// Depricated
-func (wal *HoneyberriWAL) readAllWAL() []byte {
-	wal.mu.Lock()
-	defer wal.mu.Unlock()
-
-	// 1. Move the file cursor back to the very beginning (offset 0)
-	_, err := wal.file.Seek(0, 0)
-	if err != nil {
-		log.Fatalln("failed to seek file:", err)
-	}
-
-	// 2. Get the file info to know how many bytes to read
-	fileInfo, err := wal.file.Stat()
-	if err != nil {
-		log.Fatalln("failed to get file stats:", err)
-	}
-
-	// If the file is empty, handle it gracefully
-	if fileInfo.Size() == 0 {
-		fmt.Println("WAL is empty.")
-		return nil
-	}
-
-	// 3. Read all the bytes from the open file handle into a buffer
-	fileContent := make([]byte, fileInfo.Size())
-	_, err = wal.file.Read(fileContent)
-	if err != nil {
-		log.Fatalln("failed to read WAL:", err)
-	}
-
-	return fileContent
-}
-
 type state map[string]map[string]map[string]Record // db -> bucket -> key -> latest
 
 func (wal *HoneyberriWAL) replay() (state, int, error) {
