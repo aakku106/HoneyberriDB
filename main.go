@@ -90,7 +90,9 @@ func (wal *HoneyberriWAL) writeWAL(args []string) {
 	rawHash := payloadHasher.Sum(nil)
 	checkSum := hex.EncodeToString(rawHash)
 
-	record := fmt.Sprintf("%s %s %s ;;%s;; %s %s\n", tapari, duna, key, value, time.Now().UTC(), checkSum)
+	timestamp := time.Now().UnixNano()
+
+	record := fmt.Sprintf("%s %s %s ;;%s;; %d %s\n", tapari, duna, key, value, timestamp, checkSum)
 
 	wal.mu.Lock()
 	defer wal.mu.Unlock()
