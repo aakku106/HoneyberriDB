@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -101,14 +102,34 @@ func (wal *HoneyberriWAL) writeWAL(args []string) {
 	}
 }
 
-func (wal *HoneyberriWAL) ReadWAL() {
-	fileContent := wal.readAllWAL()
-
-	records := extractRecords(string(fileContent))
-	data := sanitizeRecords(records)
-	displayDb(data)
+type Record struct {
+	DB        string
+	Bucket    string
+	Key       string
+	Value     string
+	Timestamp time.Time
+	Hash      string
 }
 
+const valueSep = ";;"
+
+// ReadWAL replays the WAL top to bottom; the last write per db/bucket/key wins.
+func (wal *HoneyberriWAL) ReadWAL() {
+	state, skipped, err := wal.replay()
+	if err != nil {
+		log.Fatalln("failed to read WAL:", err)
+	}
+	if len(state) == 0 {
+		fmt.Println("WAL is empty.")
+		return
+	}
+	displayDb(state)
+	if skipped > 0 {
+		fmt.Fprintf(os.Stderr, "\nskipped %d corrupt/partial line(s)\n", skipped)
+	}
+}
+
+// Depricated
 func (wal *HoneyberriWAL) readAllWAL() []byte {
 	wal.mu.Lock()
 	defer wal.mu.Unlock()
@@ -141,6 +162,7 @@ func (wal *HoneyberriWAL) readAllWAL() []byte {
 	return fileContent
 }
 
+// Depricated
 // Removes curly brasses "{}" from all values in WAL and
 // Returns slice of string []string
 func extractRecords(fileContent string) []string {
@@ -181,33 +203,116 @@ func extractRecords(fileContent string) []string {
 {0.0.1-alpha.0:aakku,Very Good Boi}
 */
 
-func sanitizeRecords(records []string) FinalData {
-	data := make(map[string]string)
+type state map[string]map[string]map[string]Record // db -> bucket -> key -> latest
 
-	for _, record := range records {
-		// Cut splits the string at the *very first* occurrence of ":"
-		key, value, found := strings.Cut(record, ":")
+func (wal *HoneyberriWAL) replay() (state, int, error) {
+	wal.mu.Lock() // Lock, not RLock: Seek moves the shared file offset
+	defer wal.mu.Unlock()
 
-		if found {
-			trimmedKey := strings.TrimSpace(key)
-			trimmedVal := strings.TrimSpace(value)
-
-			data[trimmedKey] = trimmedVal
-		}
+	if _, err := wal.file.Seek(0, io.SeekStart); err != nil {
+		return nil, 0, err
 	}
 
-	return data
+	st := make(state)
+	skipped := 0
+
+	sc := bufio.NewScanner(wal.file)
+	sc.Buffer(make([]byte, 0, 64*1024), 16*1024*1024)
+
+	for sc.Scan() {
+		line := strings.TrimSpace(sc.Text())
+		if line == "" {
+			continue
+		}
+		rec, ok := parseLine(line)
+		if !ok {
+			skipped++
+			continue
+		}
+		if st[rec.DB] == nil {
+			st[rec.DB] = make(map[string]map[string]Record)
+		}
+		if st[rec.DB][rec.Bucket] == nil {
+			st[rec.DB][rec.Bucket] = make(map[string]Record)
+		}
+		st[rec.DB][rec.Bucket][rec.Key] = rec // later line overwrites earlier
+	}
+	return st, skipped, sc.Err()
 }
 
-func displayDb(data map[string]string) {
-	for key, value := range data {
-		if _, err := fmt.Printf("\n\n%s:\n└──", key); err != nil {
-			log.Fatalln(err)
-		}
-		if _, err := fmt.Print(" --> " + value); err != nil {
-			log.Fatalln(err)
+// Line format (see writeWAL):
+//
+//	<db> <bucket> <key> ;;<value>;; <unixnano|formatted time> <fnv128a hex>
+func parseLine(line string) (Record, bool) {
+	open := strings.Index(line, valueSep)
+	end := strings.LastIndex(line, valueSep)
+	if open < 0 || end <= open {
+		return Record{}, false
+	}
+
+	head := strings.Fields(line[:open])
+	if len(head) != 3 {
+		return Record{}, false
+	}
+	tail := strings.Fields(line[end+len(valueSep):])
+	if len(tail) < 2 {
+		return Record{}, false
+	}
+
+	ts, ok := parseTimestamp(strings.Join(tail[:len(tail)-1], " "))
+	if !ok {
+		return Record{}, false
+	}
+
+	rec := Record{
+		DB:        head[0],
+		Bucket:    head[1],
+		Key:       head[2],
+		Value:     line[open+len(valueSep) : end],
+		Timestamp: ts,
+		Hash:      tail[len(tail)-1],
+	}
+
+	// Integrity check: same payload string writeWAL hashed
+	h := fnv.New128a()
+	io.WriteString(h, fmt.Sprintf(";;%s;;%s;;%s;;%s;;", rec.DB, rec.Bucket, rec.Key, rec.Value))
+	if hex.EncodeToString(h.Sum(nil)) != rec.Hash {
+		return Record{}, false
+	}
+	return rec, true
+}
+
+func parseTimestamp(s string) (time.Time, bool) {
+	if n, err := strconv.ParseInt(s, 10, 64); err == nil {
+		return time.Unix(0, n).UTC(), true
+	}
+	if t, err := time.Parse("2006-01-02 15:04:05.999999999 -0700 MST", s); err == nil {
+		return t, true
+	}
+	return time.Time{}, false
+}
+
+func displayDb(st state) {
+	for _, db := range sortedKeys(st) {
+		fmt.Printf("\n%s\n", db)
+		for _, bucket := range sortedKeys(st[db]) {
+			fmt.Printf("├── %s\n", bucket)
+			for _, key := range sortedKeys(st[db][bucket]) {
+				r := st[db][bucket][key]
+				fmt.Printf("│   └── %s --> %s  (%s)\n", key, r.Value, r.Timestamp.Format("2006-01-02 15:04:05"))
+			}
 		}
 	}
+	fmt.Println()
+}
+
+func sortedKeys[V any](m map[string]V) []string {
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	return keys
 }
 
 func (wal *HoneyberriWAL) readAllHistory() {
