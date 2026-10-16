@@ -174,10 +174,11 @@ func newRecord(tapari, duna, key, value string) (Record, error) {
 	}, nil
 }
 
-// encode: <tapari> <duna> <key> ;;<value>;; <unixnano> <hash>\n
+// encode: \n<tapari> <duna> <key> ;;<value>;; <unixnano> <hash>
 func (r Record) encode() string {
 	var b strings.Builder
 	b.Grow(len(r.Tapari) + len(r.Duna) + len(r.Key) + len(r.Value) + len(r.Hash) + 48)
+	b.WriteByte('\n')
 	b.WriteString(r.Tapari)
 	b.WriteByte(' ')
 	b.WriteString(r.Duna)
@@ -189,7 +190,6 @@ func (r Record) encode() string {
 	b.WriteString(strconv.FormatInt(r.Timestamp.UnixNano(), 10))
 	b.WriteByte(' ')
 	b.WriteString(r.Hash)
-	b.WriteByte('\n')
 	return b.String()
 }
 
