@@ -20,7 +20,7 @@ const (
 	DBname          = "HoneyberriDB"
 	SoftwareVersion = "0.0.1-alpha.2"
 	WALversion      = "0.0.1-alpha.2"
-	WALname         = DBname + SoftwareVersion + ".aakku"
+	WALname         = DBname + WALversion + ".aakku"
 	HistoryName     = "History" + SoftwareVersion + ".aakku"
 
 	valueSep = ";;"
