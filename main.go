@@ -3,7 +3,6 @@ package main
 import (
 	"bufio"
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"hash/fnv"
 	"io"
@@ -14,95 +13,83 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"unicode"
 )
 
 const (
-	SoftwareVersion string = "0.0.1-alpha.2"
-	DBname          string = "HoneyberriDB"
-	WALname         string = DBname + SoftwareVersion + ".aakku"
+	SoftwareVersion = "0.0.1-alpha.2"
+	DBname          = "HoneyberriDB"
+	WALname         = DBname + SoftwareVersion + ".aakku"
+	HistoryName     = "History" + SoftwareVersion + ".aakku"
+
+	valueSep   = ";;"
+	timeLayout = "2006-01-02 15:04:05.999999999 -0700 MST"
 )
 
+// ---------- WAL ----------
+
 type HoneyberriWAL struct {
-	mu       sync.RWMutex
-	filename string
-	file     *os.File
+	mu   sync.Mutex // Mutex, not RWMutex: even reads Seek the shared file offset
+	file *os.File
 }
 
 func OpenWAL() (*HoneyberriWAL, error) {
-	// Open the WAL ant let it be opean
 	file, err := os.OpenFile(WALname, os.O_APPEND|os.O_CREATE|os.O_RDWR, 0644)
 	if err != nil {
 		return nil, err
 	}
-
-	return &HoneyberriWAL{
-		filename: WALname,
-		file:     file,
-	}, nil
+	return &HoneyberriWAL{file: file}, nil
 }
 
-type FinalData map[string]string
+func (wal *HoneyberriWAL) Close() error { return wal.file.Close() }
+
+// ---------- main ----------
 
 func main() {
 	wal, err := OpenWAL()
 	if err != nil {
 		log.Fatalln(err)
 	}
-	defer wal.file.Close()
+	defer wal.Close()
 
-	args := os.Args
+	if err := run(wal, os.Args); err != nil {
+		wal.Close() // log.Fatalln skips defers
+		log.Fatalln(err)
+	}
+}
+
+func run(wal *HoneyberriWAL, args []string) error {
 	if len(args) < 2 {
-		log.Fatalln("Need to be more than 1 args to write,read,history,parc")
+		return fmt.Errorf("usage: write|read|history")
 	}
 
 	switch args[1] {
 	case "write", "w":
-		wal.writeWAL(args)
-		fmt.Printf("\nSuccessfully wrote Key:\t%s,\tValue:\t%s\tto database!\n\n", args[2], args[3])
+		if len(args) < 6 {
+			return fmt.Errorf("usage: write <tapari> <duna> <key> <value...>")
+		}
+		rec, err := newRecord(args[2], args[3], args[4], strings.Join(args[5:], " "))
+		if err != nil {
+			return err
+		}
+		if err := wal.appendRecord(rec); err != nil {
+			return fmt.Errorf("failed to write WAL: %w", err)
+		}
+		fmt.Printf("\nWrote %s %s  Key: %s  Value: %s\n\n", rec.Tapari, rec.Duna, rec.Key, rec.Value)
+		return nil
 
 	case "read", "r":
-		wal.ReadWAL()
+		return wal.ReadWAL()
 
 	case "history", "h":
-		wal.readAllHistory()
-
-	case "parse", "p":
-		wal.parcJSON("./data.json")
+		return wal.ReadHistory()
 
 	default:
-		fmt.Println("IndifinateBehavior")
+		return fmt.Errorf("unknown command %q (use write|read|history)", args[1])
 	}
 }
 
-func (wal *HoneyberriWAL) writeWAL(args []string) {
-
-	tapari := strings.TrimSpace(args[2])
-	duna := strings.TrimSpace(args[3])
-	key := strings.TrimSpace(args[4])
-	value := strings.TrimSpace(args[5])
-
-	payload := fmt.Sprintf(";;%s;;%s;;%s;;%s;;", tapari, duna, key, value)
-
-	payloadHasher := fnv.New128a()
-	_, err := io.WriteString(payloadHasher, payload)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to write to hasher: %v\n", err)
-		os.Exit(1)
-	}
-
-	rawHash := payloadHasher.Sum(nil)
-	checkSum := hex.EncodeToString(rawHash)
-
-	timestamp := time.Now().UnixNano()
-
-	record := fmt.Sprintf("%s %s %s ;;%s;; %d %s\n", tapari, duna, key, value, timestamp, checkSum)
-
-	wal.mu.Lock()
-	defer wal.mu.Unlock()
-	if _, err := wal.file.WriteString(record); err != nil {
-		log.Fatalln(err)
-	}
-}
+// ---------- record ----------
 
 type Record struct {
 	Tapari    string
@@ -113,14 +100,120 @@ type Record struct {
 	Hash      string
 }
 
-const valueSep = ";;"
+// group is a (Tapari, Duna) pair. Using it as a single map key replaces
+// the triple-nested maps and the "create if nil" boilerplate.
+type group struct{ Tapari, Duna string }
 
-// ---------- shared WAL scanning ----------
+func sortedGroups[V any](m map[group]V) []group {
+	gs := make([]group, 0, len(m))
+	for g := range m {
+		gs = append(gs, g)
+	}
+	sort.Slice(gs, func(i, j int) bool {
+		if gs[i].Tapari != gs[j].Tapari {
+			return gs[i].Tapari < gs[j].Tapari
+		}
+		return gs[i].Duna < gs[j].Duna
+	})
+	return gs
+}
 
-// scanWAL walks the WAL top to bottom and calls fn for every valid record.
+func sortedKeys[V any](m map[string]V) []string {
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	return keys
+}
+
+// checksum is shared by the writer and the reader so they can never drift apart.
+func checksum(tapari, duna, key, value string) string {
+	h := fnv.New128a()
+	h.Write([]byte(valueSep + tapari + valueSep + duna + valueSep + key + valueSep + value + valueSep))
+	return hex.EncodeToString(h.Sum(nil))
+}
+
+// ---------- write path ----------
+
+// tapari/duna/key live in the space-separated header, so they must be
+// non-empty, whitespace-free and must not contain ";;".
+func validateHeaderField(name, s string) error {
+	switch {
+	case s == "":
+		return fmt.Errorf("%s must not be empty", name)
+	case strings.IndexFunc(s, unicode.IsSpace) >= 0:
+		return fmt.Errorf("%s %q must not contain whitespace", name, s)
+	case strings.Contains(s, valueSep):
+		return fmt.Errorf("%s %q must not contain %q", name, s, valueSep)
+	}
+	return nil
+}
+
+func newRecord(tapari, duna, key, value string) (Record, error) {
+	tapari, duna, key = strings.TrimSpace(tapari), strings.TrimSpace(duna), strings.TrimSpace(key)
+	value = strings.TrimSpace(value)
+
+	for _, f := range [...]struct{ name, val string }{
+		{"tapari", tapari}, {"duna", duna}, {"key", key},
+	} {
+		if err := validateHeaderField(f.name, f.val); err != nil {
+			return Record{}, err
+		}
+	}
+	// The WAL is line-based, so a value can't contain line breaks.
+	if strings.ContainsAny(value, "\r\n") {
+		return Record{}, fmt.Errorf("value must not contain line breaks")
+	}
+
+	return Record{
+		Tapari:    tapari,
+		Duna:      duna,
+		Key:       key,
+		Value:     value,
+		Timestamp: time.Now(),
+		Hash:      checksum(tapari, duna, key, value),
+	}, nil
+}
+
+// encode: <tapari> <duna> <key> ;;<value>;; <unixnano> <hash>\n
+func (r Record) encode() string {
+	var b strings.Builder
+	b.Grow(len(r.Tapari) + len(r.Duna) + len(r.Key) + len(r.Value) + len(r.Hash) + 48)
+	b.WriteString(r.Tapari)
+	b.WriteByte(' ')
+	b.WriteString(r.Duna)
+	b.WriteByte(' ')
+	b.WriteString(r.Key)
+	b.WriteString(" " + valueSep)
+	b.WriteString(r.Value)
+	b.WriteString(valueSep + " ")
+	b.WriteString(strconv.FormatInt(r.Timestamp.UnixNano(), 10))
+	b.WriteByte(' ')
+	b.WriteString(r.Hash)
+	b.WriteByte('\n')
+	return b.String()
+}
+
+// appendRecord writes one record in a single write call, then fsyncs.
+func (wal *HoneyberriWAL) appendRecord(r Record) error {
+	line := r.encode()
+
+	wal.mu.Lock()
+	defer wal.mu.Unlock()
+
+	if _, err := wal.file.WriteString(line); err != nil {
+		return err
+	}
+	return wal.file.Sync() // don't return until it's on disk
+}
+
+// ---------- read path ----------
+
+// scanWAL streams the WAL top to bottom and calls fn for every valid record.
 // Corrupt or partial lines are skipped and counted.
 func (wal *HoneyberriWAL) scanWAL(fn func(Record)) (skipped int, err error) {
-	wal.mu.Lock() // Lock, not RLock: Seek moves the shared file offset
+	wal.mu.Lock()
 	defer wal.mu.Unlock()
 
 	if _, err := wal.file.Seek(0, io.SeekStart); err != nil {
@@ -145,7 +238,7 @@ func (wal *HoneyberriWAL) scanWAL(fn func(Record)) (skipped int, err error) {
 	return skipped, sc.Err()
 }
 
-// Line format (see writeWAL):
+// parseLine parses:
 //
 //	<tapari> <duna> <key> ;;<value>;; <unixnano|formatted time> <fnv128a hex>
 func parseLine(line string) (Record, bool) {
@@ -159,12 +252,14 @@ func parseLine(line string) (Record, bool) {
 	if len(head) != 3 {
 		return Record{}, false
 	}
-	tail := strings.Fields(line[end+len(valueSep):])
-	if len(tail) < 2 {
+
+	// tail = "<timestamp> <hash>"; the timestamp may itself contain spaces
+	tail := strings.TrimSpace(line[end+len(valueSep):])
+	sp := strings.LastIndexByte(tail, ' ')
+	if sp < 0 {
 		return Record{}, false
 	}
-
-	ts, ok := parseTimestamp(strings.Join(tail[:len(tail)-1], " "))
+	ts, ok := parseTimestamp(strings.TrimSpace(tail[:sp]))
 	if !ok {
 		return Record{}, false
 	}
@@ -175,13 +270,9 @@ func parseLine(line string) (Record, bool) {
 		Key:       head[2],
 		Value:     line[open+len(valueSep) : end],
 		Timestamp: ts,
-		Hash:      tail[len(tail)-1],
+		Hash:      tail[sp+1:],
 	}
-
-	// Integrity check: same payload string writeWAL hashed
-	h := fnv.New128a()
-	io.WriteString(h, fmt.Sprintf(";;%s;;%s;;%s;;%s;;", rec.Tapari, rec.Duna, rec.Key, rec.Value))
-	if hex.EncodeToString(h.Sum(nil)) != rec.Hash {
+	if checksum(rec.Tapari, rec.Duna, rec.Key, rec.Value) != rec.Hash {
 		return Record{}, false
 	}
 	return rec, true
@@ -191,19 +282,10 @@ func parseTimestamp(s string) (time.Time, bool) {
 	if n, err := strconv.ParseInt(s, 10, 64); err == nil {
 		return time.Unix(0, n).UTC(), true
 	}
-	if t, err := time.Parse("2006-01-02 15:04:05.999999999 -0700 MST", s); err == nil {
+	if t, err := time.Parse(timeLayout, s); err == nil {
 		return t, true
 	}
 	return time.Time{}, false
-}
-
-func sortedKeys[V any](m map[string]V) []string {
-	keys := make([]string, 0, len(m))
-	for k := range m {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
-	return keys
 }
 
 func warnSkipped(n int) {
@@ -214,118 +296,101 @@ func warnSkipped(n int) {
 
 // ---------- read / r ----------
 
-type state map[string]map[string]map[string]Record // tapari -> duna -> key -> latest
-
-func (wal *HoneyberriWAL) ReadWAL() {
-	st := make(state)
+// ReadWAL replays the WAL; the last write per tapari/duna/key wins.
+func (wal *HoneyberriWAL) ReadWAL() error {
+	st := make(map[group]map[string]Record)
 
 	skipped, err := wal.scanWAL(func(r Record) {
-		if st[r.Tapari] == nil {
-			st[r.Tapari] = make(map[string]map[string]Record)
+		g := group{r.Tapari, r.Duna}
+		m := st[g]
+		if m == nil {
+			m = make(map[string]Record)
+			st[g] = m
 		}
-		if st[r.Tapari][r.Duna] == nil {
-			st[r.Tapari][r.Duna] = make(map[string]Record)
-		}
-		st[r.Tapari][r.Duna][r.Key] = r // later line overwrites earlier
+		m[r.Key] = r // later line overwrites earlier
 	})
 	if err != nil {
-		log.Fatalln("failed to read WAL:", err)
+		return fmt.Errorf("failed to read WAL: %w", err)
 	}
 	if len(st) == 0 {
 		fmt.Println("WAL is empty.")
-		return
+		return nil
 	}
 
-	displayDb(st)
-	warnSkipped(skipped)
-}
-
-func displayDb(st state) {
-	for _, tapari := range sortedKeys(st) {
-		fmt.Printf("\n%s\n", tapari)
-		for _, duna := range sortedKeys(st[tapari]) {
-			fmt.Printf("├── %s\n", duna)
-			for _, key := range sortedKeys(st[tapari][duna]) {
-				r := st[tapari][duna][key]
-				fmt.Printf("│   └── %s --> %s  (%s)\n", key, r.Value, r.Timestamp.Format("2006-01-02 15:04:05"))
-			}
+	out := bufio.NewWriter(os.Stdout)
+	lastTapari := ""
+	for _, g := range sortedGroups(st) {
+		if g.Tapari != lastTapari {
+			fmt.Fprintf(out, "\n%s\n", g.Tapari)
+			lastTapari = g.Tapari
+		}
+		fmt.Fprintf(out, "├── %s\n", g.Duna)
+		keys := st[g]
+		for _, k := range sortedKeys(keys) {
+			r := keys[k]
+			fmt.Fprintf(out, "│   └── %s --> %s  (%s)\n", k, r.Value, r.Timestamp.Format("2006-01-02 15:04:05"))
 		}
 	}
-	fmt.Println()
+	fmt.Fprintln(out)
+	if err := out.Flush(); err != nil {
+		return err
+	}
+
+	warnSkipped(skipped)
+	return nil
 }
 
 // ---------- history / h ----------
 
-type history map[string]map[string]map[string][]string // tapari -> duna -> key -> values (oldest first)
-
-func (wal *HoneyberriWAL) readAllHistory() {
-	h := make(history)
+// ReadHistory prints every value ever written per key and saves it to HistoryName.
+func (wal *HoneyberriWAL) ReadHistory() error {
+	h := make(map[group]map[string][]string)
 
 	skipped, err := wal.scanWAL(func(r Record) {
-		if h[r.Tapari] == nil {
-			h[r.Tapari] = make(map[string]map[string][]string)
+		g := group{r.Tapari, r.Duna}
+		m := h[g]
+		if m == nil {
+			m = make(map[string][]string)
+			h[g] = m
 		}
-		if h[r.Tapari][r.Duna] == nil {
-			h[r.Tapari][r.Duna] = make(map[string][]string)
-		}
-		h[r.Tapari][r.Duna][r.Key] = append(h[r.Tapari][r.Duna][r.Key], r.Value)
+		m[r.Key] = append(m[r.Key], r.Value) // oldest first
 	})
 	if err != nil {
-		log.Fatalln("failed to read WAL:", err)
+		return fmt.Errorf("failed to read WAL: %w", err)
 	}
 	if len(h) == 0 {
 		fmt.Println("WAL is empty.")
-		return
+		return nil
 	}
 
-	// Print to terminal
-	writeHistory(os.Stdout, h)
-
-	// Save to file
-	file, err := os.Create("History" + SoftwareVersion + ".aakku")
+	file, err := os.Create(HistoryName)
 	if err != nil {
-		log.Fatalln(err)
+		return err
 	}
 	defer file.Close()
 
-	bw := bufio.NewWriter(file)
+	// One render, two destinations: terminal and file.
+	bw := bufio.NewWriter(io.MultiWriter(os.Stdout, file))
 	writeHistory(bw, h)
 	if err := bw.Flush(); err != nil {
-		log.Fatalln(err)
+		return err
 	}
 
 	warnSkipped(skipped)
+	return nil
 }
 
 // Format:
 //
 //	<Tapari> <Duna>
 //	<key>:<value>,<value>,<value>
-func writeHistory(w io.Writer, h history) {
-	for _, tapari := range sortedKeys(h) {
-		for _, duna := range sortedKeys(h[tapari]) {
-			fmt.Fprintf(w, "%s %s\n", tapari, duna)
-			for _, key := range sortedKeys(h[tapari][duna]) {
-				fmt.Fprintf(w, "%s:%s\n", key, strings.Join(h[tapari][duna][key], ","))
-			}
-			fmt.Fprintln(w)
+func writeHistory(w io.Writer, h map[group]map[string][]string) {
+	for _, g := range sortedGroups(h) {
+		fmt.Fprintf(w, "%s %s\n", g.Tapari, g.Duna)
+		keys := h[g]
+		for _, k := range sortedKeys(keys) {
+			fmt.Fprintf(w, "%s:%s\n", k, strings.Join(keys[k], ","))
 		}
-	}
-}
-func (wal *HoneyberriWAL) parcJSON(path string) {
-	fileContent, err := os.ReadFile(path)
-	if err != nil {
-		log.Fatalf("failed to read file: %s", err)
-	}
-	data := make(map[string]any)
-	if err := json.Unmarshal(fileContent, &data); err != nil {
-		log.Fatal(err)
-	}
-	fmt.Printf("data: %v\n", data)
-	args := make([]string, 4)
-	for key, value := range data {
-		args[2] = key
-		args[3] = fmt.Sprintf("%v", value)
-		wal.writeWAL(args)
+		fmt.Fprintln(w)
 	}
 }
