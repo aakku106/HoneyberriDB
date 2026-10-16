@@ -22,8 +22,7 @@ const (
 	WALname         = DBname + SoftwareVersion + ".aakku"
 	HistoryName     = "History" + SoftwareVersion + ".aakku"
 
-	valueSep   = ";;"
-	timeLayout = "2006-01-02 15:04:05.999999999 -0700 MST"
+	valueSep = ";;"
 )
 
 // ---------- WAL ----------
@@ -100,8 +99,7 @@ type Record struct {
 	Hash      string
 }
 
-// group is a (Tapari, Duna) pair. Using it as a single map key replaces
-// the triple-nested maps and the "create if nil" boilerplate.
+// group is a (Tapari, Duna) pair, used as a single map key.
 type group struct{ Tapari, Duna string }
 
 func sortedGroups[V any](m map[group]V) []group {
@@ -238,9 +236,9 @@ func (wal *HoneyberriWAL) scanWAL(fn func(Record)) (skipped int, err error) {
 	return skipped, sc.Err()
 }
 
-// parseLine parses:
+// parseLine parses exactly what encode writes:
 //
-//	<tapari> <duna> <key> ;;<value>;; <unixnano|formatted time> <fnv128a hex>
+//	<tapari> <duna> <key> ;;<value>;; <unixnano> <hash>
 func parseLine(line string) (Record, bool) {
 	open := strings.Index(line, valueSep)
 	end := strings.LastIndex(line, valueSep)
@@ -249,18 +247,13 @@ func parseLine(line string) (Record, bool) {
 	}
 
 	head := strings.Fields(line[:open])
-	if len(head) != 3 {
+	tail := strings.Fields(line[end+len(valueSep):])
+	if len(head) != 3 || len(tail) != 2 {
 		return Record{}, false
 	}
 
-	// tail = "<timestamp> <hash>"; the timestamp may itself contain spaces
-	tail := strings.TrimSpace(line[end+len(valueSep):])
-	sp := strings.LastIndexByte(tail, ' ')
-	if sp < 0 {
-		return Record{}, false
-	}
-	ts, ok := parseTimestamp(strings.TrimSpace(tail[:sp]))
-	if !ok {
+	nanos, err := strconv.ParseInt(tail[0], 10, 64)
+	if err != nil {
 		return Record{}, false
 	}
 
@@ -269,23 +262,13 @@ func parseLine(line string) (Record, bool) {
 		Duna:      head[1],
 		Key:       head[2],
 		Value:     line[open+len(valueSep) : end],
-		Timestamp: ts,
-		Hash:      tail[sp+1:],
+		Timestamp: time.Unix(0, nanos),
+		Hash:      tail[1],
 	}
 	if checksum(rec.Tapari, rec.Duna, rec.Key, rec.Value) != rec.Hash {
 		return Record{}, false
 	}
 	return rec, true
-}
-
-func parseTimestamp(s string) (time.Time, bool) {
-	if n, err := strconv.ParseInt(s, 10, 64); err == nil {
-		return time.Unix(0, n).UTC(), true
-	}
-	if t, err := time.Parse(timeLayout, s); err == nil {
-		return t, true
-	}
-	return time.Time{}, false
 }
 
 func warnSkipped(n int) {
@@ -328,7 +311,7 @@ func (wal *HoneyberriWAL) ReadWAL() error {
 		keys := st[g]
 		for _, k := range sortedKeys(keys) {
 			r := keys[k]
-			fmt.Fprintf(out, "│   └── %s --> %s  (%s)\n", k, r.Value, r.Timestamp.Format("2006-01-02 15:04:05"))
+			fmt.Fprintf(out, "│   └── %s --> %s  (%s)\n", k, r.Value, r.Timestamp.UTC().Format("2006-01-02 15:04:05"))
 		}
 	}
 	fmt.Fprintln(out)
