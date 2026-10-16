@@ -17,8 +17,8 @@ import (
 )
 
 const (
-	SoftwareVersion = "0.0.1-alpha.2"
 	DBname          = "HoneyberriDB"
+	SoftwareVersion = "0.0.1-alpha.2"
 	WALname         = DBname + SoftwareVersion + ".aakku"
 	HistoryName     = "History" + SoftwareVersion + ".aakku"
 
