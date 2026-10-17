@@ -126,10 +126,11 @@ func sortedKeys[V any](m map[string]V) []string {
 	return keys
 }
 
-// checksum is shared by the writer and the reader so they can never drift apart.
-func checksum(tapari, duna, key, value string) string {
+// checksum covers every field of the record except the hash itself.
+func checksum(tapari, duna, key, value string, nanos int64) string {
 	h := fnv.New128a()
 	h.Write([]byte(valueSep + tapari + valueSep + duna + valueSep + key + valueSep + value + valueSep))
+	h.Write(strconv.AppendInt(nil, nanos, 10))
 	return hex.EncodeToString(h.Sum(nil))
 }
 
