@@ -19,3 +19,9 @@ AnimalDb CatBucket Name ;;SuKuTi;; 1792177494998156000 5deaf4292f1ff5c231f53e69e
 HumainDb AdarashaBucket Age ;;20;; 1792177568700946000 e6123c3d22a01e7b5538c8f5da351bf9
 HumainDb AdarashaBucket Gender ;;M;; 1792177586334141000 f2276c56bb51c9a271dc60daa027bfc0
 HumainDb AdarashaBucket FavProgrammingLanguage ;;Go;; 1792177670793556000 6ca312f5115a293ffcc06c47ec6f2c76
+HumainDb AdarashaBucket FavProgrammingLanguage ;;Go;; 1792262609105623000 54240bd23edfc4f915296725f6064339
+HumainDb AdarashaBucket Age ;;20;; 1792262618178273000 27808816746bc7916a27955f0c69dd51
+HumainDb AdarashaBucket Gender ;;M;; 1792262621822025000 f5c08fc4542ae60660c2aa54354459b1
+AnimalDb CatBucket Name ;;SuKuTi;; 1792262636452475000 7d96c9c17a6b6323d301ef1fc0a8ae1e
+AnimalDb CatBucket Name ;;Fufuti;; 1792262647927218000 305b9dd8b27b1f02f17aae175a53650c
+AnimalDb DogBucket Name ;;Jau-waa;; 1792262654280532000 fb1e0424e6c3c3c7c9501eb4703877b0
