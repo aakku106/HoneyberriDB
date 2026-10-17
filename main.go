@@ -166,13 +166,14 @@ func newRecord(tapari, duna, key, value string) (Record, error) {
 		return Record{}, fmt.Errorf("value must not contain line breaks")
 	}
 
+	now := time.Now()
 	return Record{
 		Tapari:    tapari,
 		Duna:      duna,
 		Key:       key,
 		Value:     value,
-		Timestamp: time.Now(),
-		Hash:      checksum(tapari, duna, key, value),
+		Timestamp: now,
+		Hash:      checksum(tapari, duna, key, value, now.UnixNano()),
 	}, nil
 }
 
