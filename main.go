@@ -268,7 +268,7 @@ func parseLine(line string) (Record, bool) {
 		Timestamp: time.Unix(0, nanos),
 		Hash:      tail[1],
 	}
-	if checksum(rec.Tapari, rec.Duna, rec.Key, rec.Value) != rec.Hash {
+	if checksum(rec.Tapari, rec.Duna, rec.Key, rec.Value, nanos) != rec.Hash {
 		return Record{}, false
 	}
 	return rec, true
