@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"hash/fnv"
 	"io"
@@ -52,6 +53,7 @@ func main() {
 	}
 	defer wal.Close()
 	db := CreateDB()
+	defer db.DBsnapShot("SnapShot.aakku")
 
 	if err := run(wal, db, os.Args); err != nil {
 		wal.Close() // log.Fatalln skips defers
@@ -397,6 +399,11 @@ func CreateDB() *HoneyberriDB {
 		DbLayout: make(map[string]map[string]map[string]string),
 	}
 }
+func CloseDb() error {
+	db := &HoneyberriDB{}
+	return db.DBsnapShot("snapShot.aakku")
+}
+
 func (db *HoneyberriDB) updateDb(tapari, duna, key, value string) error {
 	db.mu.Lock()
 	defer db.mu.Unlock()
@@ -413,6 +420,32 @@ func (db *HoneyberriDB) updateDb(tapari, duna, key, value string) error {
 
 	// 3. Safely update the final key-value pair without erasing existing data
 	db.DbLayout[tapari][duna][key] = value
+
+	return nil
+}
+
+// DBsnapShot serializes the current in-memory DbLayout to disk safely.
+func (db *HoneyberriDB) DBsnapShot(filename string) error {
+	// CRITICAL: Acquire a read lock to prevent concurrent map read/write panics
+	db.mu.RLock()
+	defer db.mu.RUnlock()
+
+	file, err := os.Create(filename)
+	if err != nil {
+		return fmt.Errorf("failed to create snapshot file: %w", err)
+	}
+	defer file.Close()
+
+	// Buffer file writes in memory for high performance
+	writer := bufio.NewWriter(file)
+	defer writer.Flush()
+
+	// Encode the nested map structure into JSON
+	encoder := json.NewEncoder(writer)
+
+	if err := encoder.Encode(db.DbLayout); err != nil {
+		return fmt.Errorf("failed to encode database layout: %w", err)
+	}
 
 	return nil
 }
