@@ -53,7 +53,7 @@ func main() {
 	}
 	defer wal.Close()
 	db := CreateDB()
-	defer db.DBsnapShot("SnapShot.aakku")
+	defer db.CloseDb()
 
 	if err := run(wal, db, os.Args); err != nil {
 		wal.Close() // log.Fatalln skips defers
@@ -399,8 +399,7 @@ func CreateDB() *HoneyberriDB {
 		DbLayout: make(map[string]map[string]map[string]string),
 	}
 }
-func CloseDb() error {
-	db := &HoneyberriDB{}
+func (db *HoneyberriDB) CloseDb() error {
 	return db.DBsnapShot("snapShot.aakku")
 }
 
