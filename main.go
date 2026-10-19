@@ -51,14 +51,15 @@ func main() {
 		log.Fatalln(err)
 	}
 	defer wal.Close()
+	db := CreateDB()
 
-	if err := run(wal, os.Args); err != nil {
+	if err := run(wal, db, os.Args); err != nil {
 		wal.Close() // log.Fatalln skips defers
 		log.Fatalln(err)
 	}
 }
 
-func run(wal *HoneyberriWAL, args []string) error {
+func run(wal *HoneyberriWAL, db *HoneyberriDB, args []string) error {
 	if len(args) < 2 {
 		return fmt.Errorf("usage: write|read|history")
 	}
@@ -76,6 +77,9 @@ func run(wal *HoneyberriWAL, args []string) error {
 			return fmt.Errorf("failed to write WAL: %w", err)
 		}
 		fmt.Printf("\nWrote %s %s  Key: %s  Value: %s\n\n", rec.Tapari, rec.Duna, rec.Key, rec.Value)
+		if err := db.updateDb(rec.Tapari, rec.Duna, rec.Key, rec.Value); err != nil {
+			return fmt.Errorf("Unable to update DB", err)
+		}
 		return nil
 
 	case "read", "r":
