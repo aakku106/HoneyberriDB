@@ -455,3 +455,34 @@ func (db *HoneyberriDB) DBsnapShot(filename string) error {
 
 	return nil
 }
+
+// LoadSnapshot restores the database layout from an existing snapshot file.
+func (db *HoneyberriDB) LoadSnapshot(filename string) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
+	file, err := os.Open(filename)
+	if err != nil {
+		if os.IsNotExist(err) {
+			// If snapshot doesn't exist yet, that's fine (fresh DB)
+			return nil
+		}
+		return fmt.Errorf("failed to open snapshot file: %w", err)
+	}
+	defer file.Close()
+
+	reader := bufio.NewReader(file)
+	decoder := json.NewDecoder(reader)
+
+	// Decode directly into the DbLayout map
+	var loadedLayout map[string]map[string]map[string]string
+	if err := decoder.Decode(&loadedLayout); err != nil {
+		return fmt.Errorf("failed to decode snapshot data: %w", err)
+	}
+
+	if loadedLayout != nil {
+		db.DbLayout = loadedLayout
+	}
+
+	return nil
+}
