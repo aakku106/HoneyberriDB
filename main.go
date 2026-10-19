@@ -52,7 +52,7 @@ func main() {
 		log.Fatalln(err)
 	}
 	defer wal.Close()
-	db := CreateDB()
+	db := OpenDb()
 	defer db.CloseDb()
 
 	if err := run(wal, db, os.Args); err != nil {
@@ -86,7 +86,7 @@ func run(wal *HoneyberriWAL, db *HoneyberriDB, args []string) error {
 		return nil
 
 	case "read", "r":
-		return wal.ReadWAL()
+		return wal.ReadWAL(db)
 
 	case "history", "h":
 		return wal.ReadHistory()
@@ -220,7 +220,7 @@ func (wal *HoneyberriWAL) appendRecord(r Record) error {
 
 // scanWAL streams the WAL top to bottom and calls fn for every valid record.
 // Corrupt or partial lines are skipped and counted.
-func (wal *HoneyberriWAL) scanWAL(fn func(Record)) (skipped int, err error) {
+func (wal *HoneyberriWAL) scanWAL(fn func(Record), db *HoneyberriDB) (skipped int, err error) {
 	wal.mu.Lock()
 	defer wal.mu.Unlock()
 
@@ -242,6 +242,9 @@ func (wal *HoneyberriWAL) scanWAL(fn func(Record)) (skipped int, err error) {
 			continue
 		}
 		fn(rec)
+		if err := db.updateDb(rec.Tapari, rec.Duna, rec.Key, rec.Value); err != nil {
+			return -1, fmt.Errorf("cant updarte DB")
+		}
 	}
 	return skipped, sc.Err()
 }
@@ -290,7 +293,7 @@ func warnSkipped(n int) {
 // ---------- read / r ----------
 
 // ReadWAL replays the WAL; the last write per tapari/duna/key wins.
-func (wal *HoneyberriWAL) ReadWAL() error {
+func (wal *HoneyberriWAL) ReadWAL(db *HoneyberriDB) error {
 	st := make(map[group]map[string]Record)
 
 	skipped, err := wal.scanWAL(func(r Record) {
@@ -301,7 +304,7 @@ func (wal *HoneyberriWAL) ReadWAL() error {
 			st[g] = m
 		}
 		m[r.Key] = r // later line overwrites earlier
-	})
+	}, db)
 	if err != nil {
 		return fmt.Errorf("failed to read WAL: %w", err)
 	}
@@ -347,7 +350,7 @@ func (wal *HoneyberriWAL) ReadHistory() error {
 			h[g] = m
 		}
 		m[r.Key] = append(m[r.Key], r.Value) // oldest first
-	})
+	}, nil)
 	if err != nil {
 		return fmt.Errorf("failed to read WAL: %w", err)
 	}
@@ -395,7 +398,7 @@ type HoneyberriDB struct {
 	mu       sync.RWMutex
 }
 
-func CreateDB() *HoneyberriDB {
+func OpenDb() *HoneyberriDB {
 	return &HoneyberriDB{
 		DbLayout: make(map[string]map[string]map[string]string),
 	}
