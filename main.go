@@ -384,3 +384,35 @@ func writeHistory(w io.Writer, h map[group]map[string][]string) {
 		fmt.Fprintln(w)
 	}
 }
+
+// Now i have to implement memory
+
+type HoneyberriDB struct {
+	DbLayout map[string]map[string]map[string]string
+	mu       sync.RWMutex
+}
+
+func CreateDB() *HoneyberriDB {
+	return &HoneyberriDB{
+		DbLayout: make(map[string]map[string]map[string]string),
+	}
+}
+func (db *HoneyberriDB) updateDb(tapari, duna, key, value string) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
+	// 1. Ensure the first nested level exists
+	if db.DbLayout[tapari] == nil {
+		db.DbLayout[tapari] = make(map[string]map[string]string)
+	}
+
+	// 2. Ensure the second nested level exists
+	if db.DbLayout[tapari][duna] == nil {
+		db.DbLayout[tapari][duna] = make(map[string]string)
+	}
+
+	// 3. Safely update the final key-value pair without erasing existing data
+	db.DbLayout[tapari][duna][key] = value
+
+	return nil
+}
