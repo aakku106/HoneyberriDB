@@ -90,6 +90,9 @@ func run(wal *HoneyberriWAL, db *HoneyberriDB, args []string) error {
 
 	case "history", "h":
 		return wal.ReadHistory()
+	case "load", "l":
+		// this shall read all wall, and build DB in memory
+		return nil
 
 	default:
 		return fmt.Errorf("unknown command %q (use write|read|history)", args[1])
