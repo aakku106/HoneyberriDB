@@ -78,10 +78,11 @@ func run(wal *HoneyberriWAL, db *HoneyberriDB, args []string) error {
 		if err := wal.appendRecord(rec); err != nil {
 			return fmt.Errorf("failed to write WAL: %w", err)
 		}
-		fmt.Printf("\nWrote %s %s  Key: %s  Value: %s\n\n", rec.Tapari, rec.Duna, rec.Key, rec.Value)
 		if err := db.updateDb(rec.Tapari, rec.Duna, rec.Key, rec.Value); err != nil {
-			return fmt.Errorf("Unable to update DB", err)
+			return fmt.Errorf("Unable to update DB:\t%s", err)
 		}
+
+		fmt.Printf("\nWrote %s %s  Key: %s  Value: %s\n\n", rec.Tapari, rec.Duna, rec.Key, rec.Value)
 		return nil
 
 	case "read", "r":
