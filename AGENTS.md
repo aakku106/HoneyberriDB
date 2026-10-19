@@ -16,7 +16,7 @@ HoneyberriDB is a single-file Go CLI key-value store (`main.go`, stdlib only): a
 
 ## Data files
 
-- All state lives in the current working directory. Running commands in the repo root creates or modifies tracked data files; test in a temp dir instead:
+- All state lives in the current working directory; even `read`/`history` create the WAL file if it is missing. Running commands in the repo root litters it with untracked versioned `.aakku` files (and would overwrite a tracked legacy file if the version constants are ever set back to one of those names). Test in a temp dir instead:
   `mkdir -p /tmp/honey && cp main.go /tmp/honey && cd /tmp/honey && go run main.go write ...`
 - Filenames derive from `WALversion` / `SoftwareVersion` at the top of `main.go`. Current live files are `HoneyberriDB0.0.1-alpha.3.aakku`, `Snapshot.HoneyberriDB0.0.1-alpha.3.aakku`, and `History.HoneyberriDB0.0.1-alpha.3.aakku`.
 - Every other `.aakku` file and `data.json` are historical; current code does not read them. In particular, `snapShot.aakku` is not the snapshot file.
