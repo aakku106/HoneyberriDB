@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -9,6 +10,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
@@ -19,9 +21,10 @@ import (
 
 const (
 	DBname          = "HoneyberriDB"
-	SoftwareVersion = "0.0.1-alpha.2"
-	WALversion      = "0.0.1-alpha.2"
+	SoftwareVersion = "0.0.1-alpha.3"
+	WALversion      = "0.0.1-alpha.3"
 	WALname         = DBname + WALversion + ".aakku"
+	SnapshotName    = "Snapshot." + DBname + SoftwareVersion + ".aakku"
 	HistoryName     = "History." + DBname + WALversion + ".aakku"
 
 	valueSep = ";;"
@@ -30,7 +33,7 @@ const (
 // ---------- WAL ----------
 
 type HoneyberriWAL struct {
-	mu   sync.Mutex // Mutex, not RWMutex: even reads Seek the shared file offset
+	mu   sync.Mutex // Mutex, not RWMutex: scanning Seeks the shared file offset
 	file *os.File
 }
 
@@ -47,21 +50,33 @@ func (wal *HoneyberriWAL) Close() error { return wal.file.Close() }
 // ---------- main ----------
 
 func main() {
-	wal, err := OpenWAL()
-	if err != nil {
-		log.Fatalln(err)
-	}
-	defer wal.Close()
-	db := OpenDb()
-	defer db.CloseDb()
-
-	if err := run(wal, db, os.Args); err != nil {
-		wal.Close() // log.Fatalln skips defers
+	if err := realMain(); err != nil {
 		log.Fatalln(err)
 	}
 }
 
-func run(wal *HoneyberriWAL, db *HoneyberriDB, args []string) error {
+func realMain() error {
+	wal, err := OpenWAL()
+	if err != nil {
+		return err
+	}
+	defer wal.Close()
+
+	// OpenDb = load snapshot (if any) + replay WAL records newer than it.
+	db, skipped, err := OpenDb(wal)
+	if err != nil {
+		return err
+	}
+	warnSkipped(skipped)
+
+	err = run(db, os.Args)
+	if cerr := db.CloseDb(); err == nil { // CloseDb writes a snapshot if anything changed
+		err = cerr
+	}
+	return err
+}
+
+func run(db *HoneyberriDB, args []string) error {
 	if len(args) < 2 {
 		return fmt.Errorf("usage: write|read|history")
 	}
@@ -71,28 +86,18 @@ func run(wal *HoneyberriWAL, db *HoneyberriDB, args []string) error {
 		if len(args) < 6 {
 			return fmt.Errorf("usage: write <tapari> <duna> <key> <value...>")
 		}
-		rec, err := newRecord(args[2], args[3], args[4], strings.Join(args[5:], " "))
+		rec, err := db.Set(args[2], args[3], args[4], strings.Join(args[5:], " "))
 		if err != nil {
 			return err
 		}
-		if err := wal.appendRecord(rec); err != nil {
-			return fmt.Errorf("failed to write WAL: %w", err)
-		}
-		if err := db.updateDb(rec.Tapari, rec.Duna, rec.Key, rec.Value); err != nil {
-			return fmt.Errorf("Unable to update DB:\t%s", err)
-		}
-
-		fmt.Printf("\nWrote %s %s  Key: %s  Value: %s\n\n", rec.Tapari, rec.Duna, rec.Key, rec.Value)
+		fmt.Printf("\nWrote #%d %s %s  Key: %s  Value: %s\n\n", rec.Seq, rec.Tapari, rec.Duna, rec.Key, rec.Value)
 		return nil
 
 	case "read", "r":
-		return wal.ReadWAL(db)
+		return db.PrintAll() // served from memory, no WAL scan
 
 	case "history", "h":
-		return wal.ReadHistory()
-	case "load", "l":
-		// this shall read all wall, and build DB in memory
-		return nil
+		return db.wal.ReadHistory()
 
 	default:
 		return fmt.Errorf("unknown command %q (use write|read|history)", args[1])
@@ -102,6 +107,7 @@ func run(wal *HoneyberriWAL, db *HoneyberriDB, args []string) error {
 // ---------- record ----------
 
 type Record struct {
+	Seq       uint64
 	Tapari    string
 	Duna      string
 	Key       string
@@ -137,10 +143,18 @@ func sortedKeys[V any](m map[string]V) []string {
 }
 
 // checksum covers every field of the record except the hash itself.
-func checksum(tapari, duna, key, value string, nanos int64) string {
+func checksum(seq uint64, tapari, duna, key, value string, nanos int64) string {
 	h := fnv.New128a()
-	h.Write([]byte(valueSep + tapari + valueSep + duna + valueSep + key + valueSep + value + valueSep))
-	h.Write(strconv.AppendInt(nil, nanos, 10))
+	h.Write([]byte(strconv.FormatUint(seq, 10) +
+		valueSep + tapari + valueSep + duna + valueSep + key + valueSep + value + valueSep +
+		strconv.FormatInt(nanos, 10)))
+	return hex.EncodeToString(h.Sum(nil))
+}
+
+// sumHex hashes arbitrary bytes (used for the snapshot file).
+func sumHex(b []byte) string {
+	h := fnv.New128a()
+	h.Write(b)
 	return hex.EncodeToString(h.Sum(nil))
 }
 
@@ -160,7 +174,7 @@ func validateHeaderField(name, s string) error {
 	return nil
 }
 
-func newRecord(tapari, duna, key, value string) (Record, error) {
+func newRecord(seq uint64, tapari, duna, key, value string) (Record, error) {
 	tapari, duna, key = strings.TrimSpace(tapari), strings.TrimSpace(duna), strings.TrimSpace(key)
 	value = strings.TrimSpace(value)
 
@@ -178,20 +192,23 @@ func newRecord(tapari, duna, key, value string) (Record, error) {
 
 	now := time.Now()
 	return Record{
+		Seq:       seq,
 		Tapari:    tapari,
 		Duna:      duna,
 		Key:       key,
 		Value:     value,
 		Timestamp: now,
-		Hash:      checksum(tapari, duna, key, value, now.UnixNano()),
+		Hash:      checksum(seq, tapari, duna, key, value, now.UnixNano()),
 	}, nil
 }
 
-// encode: \n<tapari> <duna> <key> ;;<value>;; <unixnano> <hash>
+// encode: \n<seq> <tapari> <duna> <key> ;;<value>;; <unixnano> <hash>
 func (r Record) encode() string {
 	var b strings.Builder
-	b.Grow(len(r.Tapari) + len(r.Duna) + len(r.Key) + len(r.Value) + len(r.Hash) + 48)
+	b.Grow(len(r.Tapari) + len(r.Duna) + len(r.Key) + len(r.Value) + len(r.Hash) + 64)
 	b.WriteByte('\n')
+	b.WriteString(strconv.FormatUint(r.Seq, 10))
+	b.WriteByte(' ')
 	b.WriteString(r.Tapari)
 	b.WriteByte(' ')
 	b.WriteString(r.Duna)
@@ -223,7 +240,8 @@ func (wal *HoneyberriWAL) appendRecord(r Record) error {
 
 // scanWAL streams the WAL top to bottom and calls fn for every valid record.
 // Corrupt or partial lines are skipped and counted.
-func (wal *HoneyberriWAL) scanWAL(fn func(Record), db *HoneyberriDB) (skipped int, err error) {
+// It only scans: what to do with each record is up to the caller.
+func (wal *HoneyberriWAL) scanWAL(fn func(Record)) (skipped int, err error) {
 	wal.mu.Lock()
 	defer wal.mu.Unlock()
 
@@ -245,16 +263,13 @@ func (wal *HoneyberriWAL) scanWAL(fn func(Record), db *HoneyberriDB) (skipped in
 			continue
 		}
 		fn(rec)
-		if err := db.updateDb(rec.Tapari, rec.Duna, rec.Key, rec.Value); err != nil {
-			return -1, fmt.Errorf("cant updarte DB")
-		}
 	}
 	return skipped, sc.Err()
 }
 
 // parseLine parses exactly what encode writes:
 //
-//	<tapari> <duna> <key> ;;<value>;; <unixnano> <hash>
+//	<seq> <tapari> <duna> <key> ;;<value>;; <unixnano> <hash>
 func parseLine(line string) (Record, bool) {
 	open := strings.Index(line, valueSep)
 	end := strings.LastIndex(line, valueSep)
@@ -264,24 +279,29 @@ func parseLine(line string) (Record, bool) {
 
 	head := strings.Fields(line[:open])
 	tail := strings.Fields(line[end+len(valueSep):])
-	if len(head) != 3 || len(tail) != 2 {
+	if len(head) != 4 || len(tail) != 2 {
 		return Record{}, false
 	}
 
+	seq, err := strconv.ParseUint(head[0], 10, 64)
+	if err != nil {
+		return Record{}, false
+	}
 	nanos, err := strconv.ParseInt(tail[0], 10, 64)
 	if err != nil {
 		return Record{}, false
 	}
 
 	rec := Record{
-		Tapari:    head[0],
-		Duna:      head[1],
-		Key:       head[2],
+		Seq:       seq,
+		Tapari:    head[1],
+		Duna:      head[2],
+		Key:       head[3],
 		Value:     line[open+len(valueSep) : end],
 		Timestamp: time.Unix(0, nanos),
 		Hash:      tail[1],
 	}
-	if checksum(rec.Tapari, rec.Duna, rec.Key, rec.Value, nanos) != rec.Hash {
+	if checksum(rec.Seq, rec.Tapari, rec.Duna, rec.Key, rec.Value, nanos) != rec.Hash {
 		return Record{}, false
 	}
 	return rec, true
@@ -291,52 +311,6 @@ func warnSkipped(n int) {
 	if n > 0 {
 		fmt.Fprintf(os.Stderr, "\nskipped %d corrupt/partial line(s)\n", n)
 	}
-}
-
-// ---------- read / r ----------
-
-// ReadWAL replays the WAL; the last write per tapari/duna/key wins.
-func (wal *HoneyberriWAL) ReadWAL(db *HoneyberriDB) error {
-	st := make(map[group]map[string]Record)
-
-	skipped, err := wal.scanWAL(func(r Record) {
-		g := group{r.Tapari, r.Duna}
-		m := st[g]
-		if m == nil {
-			m = make(map[string]Record)
-			st[g] = m
-		}
-		m[r.Key] = r // later line overwrites earlier
-	}, db)
-	if err != nil {
-		return fmt.Errorf("failed to read WAL: %w", err)
-	}
-	if len(st) == 0 {
-		fmt.Println("WAL is empty.")
-		return nil
-	}
-
-	out := bufio.NewWriter(os.Stdout)
-	lastTapari := ""
-	for _, g := range sortedGroups(st) {
-		if g.Tapari != lastTapari {
-			fmt.Fprintf(out, "\n%s\n", g.Tapari)
-			lastTapari = g.Tapari
-		}
-		fmt.Fprintf(out, "├── %s\n", g.Duna)
-		keys := st[g]
-		for _, k := range sortedKeys(keys) {
-			r := keys[k]
-			fmt.Fprintf(out, "│   └── %s --> %s  (%s)\n", k, r.Value, r.Timestamp.UTC().Format("2006-01-02 15:04:05"))
-		}
-	}
-	fmt.Fprintln(out)
-	if err := out.Flush(); err != nil {
-		return err
-	}
-
-	warnSkipped(skipped)
-	return nil
 }
 
 // ---------- history / h ----------
@@ -353,7 +327,7 @@ func (wal *HoneyberriWAL) ReadHistory() error {
 			h[g] = m
 		}
 		m[r.Key] = append(m[r.Key], r.Value) // oldest first
-	}, nil)
+	})
 	if err != nil {
 		return fmt.Errorf("failed to read WAL: %w", err)
 	}
@@ -394,95 +368,220 @@ func writeHistory(w io.Writer, h map[group]map[string][]string) {
 	}
 }
 
-// Now i have to implement memory
+// ---------- in-memory DB ----------
 
+// entry is what memory keeps per key: the value and when it was written.
+type entry struct {
+	Value string `json:"v"`
+	Nanos int64  `json:"t"`
+}
+
+type layout map[string]map[string]map[string]entry // tapari -> duna -> key -> entry
+
+// Lock order (always): db.mu -> wal.mu. Never take db.mu while holding wal.mu.
 type HoneyberriDB struct {
-	DbLayout map[string]map[string]map[string]string
-	mu       sync.RWMutex
+	mu      sync.RWMutex
+	layout  layout
+	lastSeq uint64 // highest seq applied to memory
+	snapSeq uint64 // seq covered by the snapshot on disk
+	wal     *HoneyberriWAL
+
+	snapMu sync.Mutex // serializes snapshot writers (they share one temp file)
 }
 
-func OpenDb() *HoneyberriDB {
-	return &HoneyberriDB{
-		DbLayout: make(map[string]map[string]map[string]string),
-	}
-}
-func (db *HoneyberriDB) CloseDb() error {
-	return db.DBsnapShot("snapShot.aakku")
-}
+// OpenDb rebuilds memory: load snapshot, then replay WAL records with seq > snapshot's seq.
+func OpenDb(wal *HoneyberriWAL) (*HoneyberriDB, int, error) {
+	db := &HoneyberriDB{layout: make(layout), wal: wal}
 
-func (db *HoneyberriDB) updateDb(tapari, duna, key, value string) error {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 
-	// 1. Ensure the first nested level exists
-	if db.DbLayout[tapari] == nil {
-		db.DbLayout[tapari] = make(map[string]map[string]string)
+	if err := db.loadSnapshotLocked(SnapshotName); err != nil {
+		// A bad snapshot is not fatal: the WAL still has everything.
+		fmt.Fprintf(os.Stderr, "ignoring snapshot (%v); replaying full WAL\n", err)
+		db.layout, db.lastSeq, db.snapSeq = make(layout), 0, 0
 	}
 
-	// 2. Ensure the second nested level exists
-	if db.DbLayout[tapari][duna] == nil {
-		db.DbLayout[tapari][duna] = make(map[string]string)
+	// db.mu is already held, so the callback uses applyLocked (no locking of its own).
+	skipped, err := wal.scanWAL(func(r Record) {
+		if r.Seq <= db.lastSeq {
+			return // already in the snapshot
+		}
+		db.applyLocked(r)
+		db.lastSeq = r.Seq
+	})
+	if err != nil {
+		return nil, skipped, fmt.Errorf("failed to replay WAL: %w", err)
 	}
-
-	// 3. Safely update the final key-value pair without erasing existing data
-	db.DbLayout[tapari][duna][key] = value
-
-	return nil
+	return db, skipped, nil
 }
 
-// DBsnapShot serializes the current in-memory DbLayout to disk safely.
-func (db *HoneyberriDB) DBsnapShot(filename string) error {
-	// CRITICAL: Acquire a read lock to prevent concurrent map read/write panics
+func (db *HoneyberriDB) CloseDb() error {
+	return db.DBsnapShot(SnapshotName)
+}
+
+// applyLocked updates memory; caller must hold db.mu for writing.
+func (db *HoneyberriDB) applyLocked(r Record) {
+	duna := db.layout[r.Tapari]
+	if duna == nil {
+		duna = make(map[string]map[string]entry)
+		db.layout[r.Tapari] = duna
+	}
+	keys := duna[r.Duna]
+	if keys == nil {
+		keys = make(map[string]entry)
+		duna[r.Duna] = keys
+	}
+	keys[r.Key] = entry{Value: r.Value, Nanos: r.Timestamp.UnixNano()}
+}
+
+// Set assigns the next seq, appends to the WAL (durable), then updates memory.
+// All under one lock, so memory order always equals WAL order.
+func (db *HoneyberriDB) Set(tapari, duna, key, value string) (Record, error) {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
+	rec, err := newRecord(db.lastSeq+1, tapari, duna, key, value)
+	if err != nil {
+		return Record{}, err
+	}
+	if err := db.wal.appendRecord(rec); err != nil {
+		return Record{}, fmt.Errorf("failed to write WAL: %w", err)
+	}
+	db.applyLocked(rec)
+	db.lastSeq = rec.Seq
+	return rec, nil
+}
+
+// Get reads straight from memory.
+func (db *HoneyberriDB) Get(tapari, duna, key string) (string, bool) {
 	db.mu.RLock()
 	defer db.mu.RUnlock()
+	e, ok := db.layout[tapari][duna][key] // indexing nil maps is safe in Go
+	return e.Value, ok
+}
 
-	file, err := os.Create(filename)
+// PrintAll prints the current state from memory.
+func (db *HoneyberriDB) PrintAll() error {
+	var buf bytes.Buffer
+
+	db.mu.RLock()
+	for _, t := range sortedKeys(db.layout) {
+		fmt.Fprintf(&buf, "\n%s\n", t)
+		for _, d := range sortedKeys(db.layout[t]) {
+			fmt.Fprintf(&buf, "├── %s\n", d)
+			keys := db.layout[t][d]
+			for _, k := range sortedKeys(keys) {
+				e := keys[k]
+				fmt.Fprintf(&buf, "│   └── %s --> %s  (%s)\n", k, e.Value,
+					time.Unix(0, e.Nanos).UTC().Format("2006-01-02 15:04:05"))
+			}
+		}
+	}
+	empty := len(db.layout) == 0
+	db.mu.RUnlock()
+
+	if empty {
+		fmt.Println("DB is empty.")
+		return nil
+	}
+	buf.WriteByte('\n')
+	_, err := os.Stdout.Write(buf.Bytes()) // print outside the lock
+	return err
+}
+
+// ---------- snapshot ----------
+
+// File layout: <json>\n<fnv128a hex of the json>
+type snapshotFile struct {
+	Seq    uint64 `json:"seq"` // the snapshot covers every WAL record with seq <= this
+	Layout layout `json:"layout"`
+}
+
+// DBsnapShot writes the current state atomically (temp file -> fsync -> rename).
+// It does nothing if nothing changed since the last snapshot.
+func (db *HoneyberriDB) DBsnapShot(filename string) error {
+	db.snapMu.Lock()
+	defer db.snapMu.Unlock()
+
+	// Hold the read lock only while encoding to bytes; disk I/O happens outside it.
+	db.mu.RLock()
+	seq := db.lastSeq
+	if seq == db.snapSeq {
+		db.mu.RUnlock()
+		return nil
+	}
+	payload, err := json.Marshal(snapshotFile{Seq: seq, Layout: db.layout})
+	db.mu.RUnlock()
+	if err != nil {
+		return fmt.Errorf("failed to encode snapshot: %w", err)
+	}
+
+	data := append(payload, '\n')
+	data = append(data, sumHex(payload)...)
+
+	tmp := filename + ".tmp"
+	f, err := os.Create(tmp)
 	if err != nil {
 		return fmt.Errorf("failed to create snapshot file: %w", err)
 	}
-	defer file.Close()
-
-	// Buffer file writes in memory for high performance
-	writer := bufio.NewWriter(file)
-	defer writer.Flush()
-
-	// Encode the nested map structure into JSON
-	encoder := json.NewEncoder(writer)
-
-	if err := encoder.Encode(db.DbLayout); err != nil {
-		return fmt.Errorf("failed to encode database layout: %w", err)
+	_, err = f.Write(data)
+	if err == nil {
+		err = f.Sync()
 	}
+	if cerr := f.Close(); err == nil {
+		err = cerr
+	}
+	if err == nil {
+		err = os.Rename(tmp, filename)
+	}
+	if err != nil {
+		os.Remove(tmp)
+		return fmt.Errorf("failed to write snapshot: %w", err)
+	}
+	syncDir(filepath.Dir(filename)) // make the rename itself durable (best effort)
 
+	db.mu.Lock()
+	if seq > db.snapSeq {
+		db.snapSeq = seq
+	}
+	db.mu.Unlock()
 	return nil
 }
 
-// LoadSnapshot restores the database layout from an existing snapshot file.
-func (db *HoneyberriDB) LoadSnapshot(filename string) error {
-	db.mu.Lock()
-	defer db.mu.Unlock()
+func syncDir(dir string) {
+	if d, err := os.Open(dir); err == nil {
+		d.Sync()
+		d.Close()
+	}
+}
 
-	file, err := os.Open(filename)
+// loadSnapshotLocked restores state from the snapshot; caller must hold db.mu.
+func (db *HoneyberriDB) loadSnapshotLocked(filename string) error {
+	data, err := os.ReadFile(filename)
 	if err != nil {
 		if os.IsNotExist(err) {
-			// If snapshot doesn't exist yet, that's fine (fresh DB)
-			return nil
+			return nil // fresh DB
 		}
-		return fmt.Errorf("failed to open snapshot file: %w", err)
-	}
-	defer file.Close()
-
-	reader := bufio.NewReader(file)
-	decoder := json.NewDecoder(reader)
-
-	// Decode directly into the DbLayout map
-	var loadedLayout map[string]map[string]map[string]string
-	if err := decoder.Decode(&loadedLayout); err != nil {
-		return fmt.Errorf("failed to decode snapshot data: %w", err)
+		return fmt.Errorf("failed to read snapshot: %w", err)
 	}
 
-	if loadedLayout != nil {
-		db.DbLayout = loadedLayout
+	i := bytes.LastIndexByte(data, '\n')
+	if i < 0 {
+		return fmt.Errorf("snapshot is truncated")
+	}
+	payload, sum := data[:i], strings.TrimSpace(string(data[i+1:]))
+	if sumHex(payload) != sum {
+		return fmt.Errorf("snapshot checksum mismatch")
 	}
 
+	var s snapshotFile
+	if err := json.Unmarshal(payload, &s); err != nil {
+		return fmt.Errorf("failed to decode snapshot: %w", err)
+	}
+	if s.Layout == nil {
+		s.Layout = make(layout)
+	}
+	db.layout, db.lastSeq, db.snapSeq = s.Layout, s.Seq, s.Seq
 	return nil
 }
