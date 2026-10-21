@@ -1,0 +1,480 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description"
+    content="Interactive function-call map for HoneyberriDB 0.0.1-alpha.3, generated from main.go.">
+  <title>HoneyberriDB function calls · 0.0.1-alpha.3</title>
+  <link rel="stylesheet" href="func-calls.css">
+  <script src="call-graph-data.js" defer></script>
+  <script src="func-calls.js" defer></script>
+</head>
+
+<body id="top">
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="site-header">
+    <div class="shell site-header__inner">
+      <a class="brand" href="#top" aria-label="HoneyberriDB call map, back to top">
+        <svg class="brand__mark" viewBox="0 0 40 44" aria-hidden="true">
+          <path d="M20 2 37 12v20L20 42 3 32V12Z" fill="url(#honeyGradient)" />
+          <path d="M20 10 29.5 15.5v11L20 32l-9.5-5.5v-11Z" fill="none" stroke="rgba(14,11,18,.66)" stroke-width="2" />
+          <defs>
+            <linearGradient id="honeyGradient" x1="3" y1="2" x2="37" y2="42" gradientUnits="userSpaceOnUse">
+              <stop stop-color="#ffd67a" />
+              <stop offset=".55" stop-color="#f2b544" />
+              <stop offset="1" stop-color="#c47ae8" />
+            </linearGradient>
+          </defs>
+        </svg>
+        <span class="brand__text">
+          <strong>HoneyberriDB</strong>
+          <span>function call map</span>
+        </span>
+      </a>
+
+      <div class="site-header__meta">
+        <span class="version-pill">v0.0.1-alpha.3</span>
+        <a class="source-link" href="../../main.go">main.go <span aria-hidden="true">↗</span></a>
+        <button class="icon-button" id="themeToggle" type="button" aria-label="Switch to light theme"
+          title="Toggle theme">
+          <span class="theme-icon theme-icon--moon" aria-hidden="true">◐</span>
+          <span class="theme-icon theme-icon--sun" aria-hidden="true">☀</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="hero shell" aria-labelledby="hero-title">
+      <div class="hero__glow" aria-hidden="true"></div>
+      <p class="eyebrow"><span class="eyebrow__dot"></span> Go · one file · standard library only</p>
+      <h1 id="hero-title">Every command<br>has a <em>call path.</em></h1>
+      <p class="hero__lede">
+        An interactive map of <strong>27 functions and methods</strong> in <code>main.go</code> —
+        how HoneyberriDB boots, writes, reads, exports history, and snapshots state.
+      </p>
+
+      <dl class="stats" aria-label="Call graph statistics">
+        <div class="stat">
+          <dt>Callables</dt>
+          <dd>27</dd>
+          <span>15 functions · 12 methods</span>
+        </div>
+        <div class="stat">
+          <dt>Internal calls</dt>
+          <dd>31</dd>
+          <span>project-to-project edges</span>
+        </div>
+        <div class="stat">
+          <dt>Max depth</dt>
+          <dd>6</dd>
+          <span>calls deep from <code>main</code></span>
+        </div>
+        <div class="stat">
+          <dt>Source</dt>
+          <dd>587</dd>
+          <span>lines in one file</span>
+        </div>
+      </dl>
+
+      <div class="hero__foot">
+        <span><i class="legend-swatch legend-swatch--honey" aria-hidden="true"></i> Click any function to inspect
+          it</span>
+        <span><i class="legend-swatch legend-swatch--berry" aria-hidden="true"></i> Data extracted from
+          <code>main.go</code></span>
+        <span class="hero__generated">generated 2026-10-22 · NPT</span>
+      </div>
+    </section>
+
+    <div class="shell tab-shell">
+      <div class="tabs" role="tablist" aria-label="Call graph views">
+        <button class="tab is-active" id="tab-flow" type="button" role="tab" aria-selected="true"
+          aria-controls="panel-flow" data-tab="flow">
+          <span class="tab__index">01</span> Runtime flow
+        </button>
+        <button class="tab" id="tab-tree" type="button" role="tab" aria-selected="false" aria-controls="panel-tree"
+          data-tab="tree" tabindex="-1">
+          <span class="tab__index">02</span> Call tree
+        </button>
+        <button class="tab" id="tab-index" type="button" role="tab" aria-selected="false" aria-controls="panel-index"
+          data-tab="index" tabindex="-1">
+          <span class="tab__index">03</span> Function index
+        </button>
+      </div>
+    </div>
+
+    <section class="panel shell" id="panel-flow" role="tabpanel" aria-labelledby="tab-flow" tabindex="0">
+      <div class="section-head">
+        <div>
+          <p class="kicker">01 / execution</p>
+          <h2>Runtime flow</h2>
+        </div>
+        <p class="section-note">The path a command actually takes. Tap any function to open its signature, callers,
+          callees, and invariants.</p>
+      </div>
+
+      <div class="flow-board">
+        <article class="phase-card" data-phase="entry">
+          <header class="phase-head">
+            <span class="phase-index">01</span>
+            <div>
+              <h3>Boot</h3>
+              <p>Open the files, rebuild memory, then route the command.</p>
+            </div>
+            <span class="phase-tag">always</span>
+          </header>
+
+          <div class="flow-chain">
+            <button class="fn-chip" type="button" data-fn="main">
+              <span class="fn-chip__name">main</span>
+              <span class="fn-chip__role">process entry</span>
+            </button>
+            <span class="flow-arrow" aria-hidden="true">→</span>
+            <button class="fn-chip" type="button" data-fn="realMain">
+              <span class="fn-chip__name">realMain</span>
+              <span class="fn-chip__role">lifecycle owner</span>
+            </button>
+            <span class="flow-arrow" aria-hidden="true">→</span>
+            <button class="fn-chip" type="button" data-fn="OpenWAL">
+              <span class="fn-chip__name">OpenWAL</span>
+              <span class="fn-chip__role">open / create WAL</span>
+            </button>
+            <span class="flow-arrow" aria-hidden="true">→</span>
+            <button class="fn-chip" type="button" data-fn="OpenDb">
+              <span class="fn-chip__name">OpenDb</span>
+              <span class="fn-chip__role">snapshot + replay</span>
+            </button>
+            <span class="flow-arrow" aria-hidden="true">→</span>
+            <button class="fn-chip" type="button" data-fn="run">
+              <span class="fn-chip__name">run</span>
+              <span class="fn-chip__role">dispatch</span>
+            </button>
+          </div>
+
+          <div class="subflow">
+            <p class="subflow__label"><span aria-hidden="true">↳</span> inside OpenDb</p>
+            <div class="flow-chain flow-chain--small">
+              <button class="fn-mini" type="button" data-fn="loadSnapshotLocked">loadSnapshotLocked</button>
+              <span class="flow-arrow flow-arrow--small" aria-hidden="true">→</span>
+              <button class="fn-mini" type="button" data-fn="scanWAL">scanWAL</button>
+              <span class="flow-arrow flow-arrow--small" aria-hidden="true">→</span>
+              <button class="fn-mini" type="button" data-fn="parseLine">parseLine</button>
+              <span class="flow-arrow flow-arrow--small" aria-hidden="true">→</span>
+              <button class="fn-mini" type="button" data-fn="checksum">checksum</button>
+              <span class="flow-arrow flow-arrow--small" aria-hidden="true">→</span>
+              <button class="fn-mini" type="button" data-fn="applyLocked">applyLocked</button>
+            </div>
+            <p class="subflow__hint">Snapshot first; replay only WAL records with <code>seq &gt; lastSeq</code>.
+              <code>OpenDb</code>’s scan callback applies each verified record. Corrupt lines are skipped and counted by
+              <button class="inline-fn" type="button" data-fn="warnSkipped">warnSkipped</button>.</p>
+          </div>
+        </article>
+
+        <article class="phase-card" data-phase="db">
+          <header class="phase-head">
+            <span class="phase-index">02</span>
+            <div>
+              <h3>Dispatch</h3>
+              <p><code>run</code> branches on <code>os.Args[1]</code>. Only one lane executes.</p>
+            </div>
+            <span class="phase-tag">one of three</span>
+          </header>
+
+          <div class="dispatch">
+            <section class="lane" data-command="write">
+              <header class="lane__head">
+                <span class="command-badge">write <span>/ w</span></span>
+                <p>Durable write, then visible in memory.</p>
+              </header>
+              <div class="lane__body">
+                <div class="flow-chain flow-chain--small">
+                  <button class="fn-mini" type="button" data-fn="run">run</button>
+                  <span class="flow-arrow flow-arrow--small" aria-hidden="true">→</span>
+                  <button class="fn-mini" type="button" data-fn="Set">Set</button>
+                  <span class="flow-arrow flow-arrow--small" aria-hidden="true">→</span>
+                  <button class="fn-mini" type="button" data-fn="newRecord">newRecord</button>
+                  <span class="flow-arrow flow-arrow--small" aria-hidden="true">→</span>
+                  <button class="fn-mini" type="button" data-fn="appendRecord">appendRecord</button>
+                  <span class="flow-arrow flow-arrow--small" aria-hidden="true">→</span>
+                  <button class="fn-mini" type="button" data-fn="applyLocked">applyLocked</button>
+                </div>
+                <div class="subflow subflow--compact">
+                  <p class="subflow__label"><span aria-hidden="true">↳</span> helpers</p>
+                  <div class="chip-row">
+                    <button class="fn-mini" type="button" data-fn="validateHeaderField">validateHeaderField</button>
+                    <button class="fn-mini" type="button" data-fn="checksum">checksum</button>
+                    <button class="fn-mini" type="button" data-fn="encode">encode</button>
+                  </div>
+                  <p class="subflow__hint"><code>newRecord</code> validates and hashes; <code>appendRecord</code>
+                    encodes and fsyncs before <code>Set</code> updates memory.</p>
+                </div>
+              </div>
+            </section>
+
+            <section class="lane" data-command="read">
+              <header class="lane__head">
+                <span class="command-badge">read <span>/ r</span></span>
+                <p>Served entirely from memory — no WAL scan.</p>
+              </header>
+              <div class="lane__body">
+                <div class="flow-chain flow-chain--small">
+                  <button class="fn-mini" type="button" data-fn="run">run</button>
+                  <span class="flow-arrow flow-arrow--small" aria-hidden="true">→</span>
+                  <button class="fn-mini" type="button" data-fn="PrintAll">PrintAll</button>
+                  <span class="flow-arrow flow-arrow--small" aria-hidden="true">→</span>
+                  <button class="fn-mini" type="button" data-fn="sortedKeys">sortedKeys</button>
+                  <span class="flow-arrow flow-arrow--small" aria-hidden="true">→</span>
+                  <span class="output-pill">stdout</span>
+                </div>
+                <div class="subflow subflow--compact">
+                  <p class="subflow__hint"><code>PrintAll</code> holds <code>db.mu.RLock</code> while it builds the
+                    tree, releases the lock, then writes to stdout. <button class="inline-fn" type="button"
+                      data-fn="Get">Get</button> also reads from memory but is not called by the current CLI.</p>
+                </div>
+              </div>
+            </section>
+
+            <section class="lane" data-command="history">
+              <header class="lane__head">
+                <span class="command-badge">history <span>/ h</span></span>
+                <p>Replays every value ever written and exports a file.</p>
+              </header>
+              <div class="lane__body">
+                <div class="flow-chain flow-chain--small">
+                  <button class="fn-mini" type="button" data-fn="run">run</button>
+                  <span class="flow-arrow flow-arrow--small" aria-hidden="true">→</span>
+                  <button class="fn-mini" type="button" data-fn="ReadHistory">ReadHistory</button>
+                  <span class="flow-arrow flow-arrow--small" aria-hidden="true">→</span>
+                  <button class="fn-mini" type="button" data-fn="scanWAL">scanWAL</button>
+                  <span class="flow-arrow flow-arrow--small" aria-hidden="true">→</span>
+                  <button class="fn-mini" type="button" data-fn="parseLine">parseLine</button>
+                  <span class="flow-arrow flow-arrow--small" aria-hidden="true">→</span>
+                  <button class="fn-mini" type="button" data-fn="checksum">checksum</button>
+                </div>
+                <div class="flow-chain flow-chain--small flow-chain--second">
+                  <button class="fn-mini" type="button" data-fn="ReadHistory">ReadHistory</button>
+                  <span class="flow-arrow flow-arrow--small" aria-hidden="true">→</span>
+                  <button class="fn-mini" type="button" data-fn="writeHistory">writeHistory</button>
+                  <span class="flow-arrow flow-arrow--small" aria-hidden="true">→</span>
+                  <button class="fn-mini" type="button" data-fn="sortedGroups">sortedGroups</button>
+                  <span class="flow-arrow flow-arrow--small" aria-hidden="true">→</span>
+                  <button class="fn-mini" type="button" data-fn="sortedKeys">sortedKeys</button>
+                  <span class="flow-arrow flow-arrow--small" aria-hidden="true">→</span>
+                  <span class="output-pill">stdout + file</span>
+                </div>
+                <div class="subflow subflow--compact">
+                  <p class="subflow__hint">One render feeds both destinations through <code>io.MultiWriter</code>.
+                    <code>warnSkipped</code> reports corrupt lines after the scan.</p>
+                </div>
+              </div>
+            </section>
+          </div>
+        </article>
+
+        <article class="phase-card" data-phase="snapshot">
+          <header class="phase-head">
+            <span class="phase-index">03</span>
+            <div>
+              <h3>Shutdown</h3>
+              <p>Snapshot if anything changed, then close the WAL.</p>
+            </div>
+            <span class="phase-tag">always</span>
+          </header>
+
+          <div class="flow-chain">
+            <button class="fn-chip" type="button" data-fn="CloseDb">
+              <span class="fn-chip__name">CloseDb</span>
+              <span class="fn-chip__role">snapshot hand-off</span>
+            </button>
+            <span class="flow-arrow" aria-hidden="true">→</span>
+            <button class="fn-chip" type="button" data-fn="DBsnapShot">
+              <span class="fn-chip__name">DBsnapShot</span>
+              <span class="fn-chip__role">atomic write</span>
+            </button>
+            <span class="flow-arrow" aria-hidden="true">→</span>
+            <button class="fn-chip" type="button" data-fn="sumHex">
+              <span class="fn-chip__name">sumHex</span>
+              <span class="fn-chip__role">checksum</span>
+            </button>
+            <span class="flow-arrow" aria-hidden="true">→</span>
+            <button class="fn-chip" type="button" data-fn="syncDir">
+              <span class="fn-chip__name">syncDir</span>
+              <span class="fn-chip__role">rename durability</span>
+            </button>
+            <span class="flow-arrow" aria-hidden="true">→</span>
+            <button class="fn-chip" type="button" data-fn="Close">
+              <span class="fn-chip__name">wal.Close</span>
+              <span class="fn-chip__role">deferred</span>
+            </button>
+          </div>
+          <p class="phase-footnote">A failed command still reaches <code>CloseDb()</code>; the snapshot only writes when
+            <code>lastSeq != snapSeq</code>.</p>
+        </article>
+      </div>
+
+      <div class="invariants" aria-labelledby="invariants-title">
+        <div class="invariants__head">
+          <p class="kicker">non-negotiables</p>
+          <h3 id="invariants-title">Rules the call graph keeps</h3>
+        </div>
+        <div class="invariant-grid">
+          <article class="invariant">
+            <span class="invariant__icon" aria-hidden="true">⇄</span>
+            <h4>Lock order</h4>
+            <p><code>db.mu</code> → <code>wal.mu</code>. Never the reverse. <code>OpenDb</code> scans while holding the
+              DB lock; <code>Set</code> wraps both locks.</p>
+          </article>
+          <article class="invariant">
+            <span class="invariant__icon" aria-hidden="true">↓</span>
+            <h4>Write order</h4>
+            <p><code>newRecord</code> → <code>appendRecord</code> + fsync → <code>applyLocked</code> →
+              <code>lastSeq</code>. Disk first, memory second.</p>
+          </article>
+          <article class="invariant">
+            <span class="invariant__icon" aria-hidden="true">◫</span>
+            <h4>Snapshot order</h4>
+            <p>temp file → write → fsync → close → rename → <code>syncDir</code>. <code>snapMu</code> keeps writers from
+              sharing the temp path.</p>
+          </article>
+          <article class="invariant">
+            <span class="invariant__icon" aria-hidden="true">⌁</span>
+            <h4>Failure policy</h4>
+            <p>Bad WAL lines are counted and skipped. A bad snapshot is ignored and the full WAL is replayed. Neither is
+              fatal.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel shell" id="panel-tree" role="tabpanel" aria-labelledby="tab-tree" tabindex="0" hidden>
+      <div class="section-head">
+        <div>
+          <p class="kicker">02 / hierarchy</p>
+          <h2>Call tree</h2>
+        </div>
+        <p class="section-note">Expand, collapse, search, or tap a node. Shared functions appear under each caller; the
+          detail panel shows every caller.</p>
+      </div>
+
+      <div class="tree-toolbar">
+        <label class="search-field" for="treeSearch">
+          <span class="search-field__icon" aria-hidden="true">⌕</span>
+          <span class="sr-only">Search the call tree</span>
+          <input id="treeSearch" type="search" placeholder="Search function, role, or tag…" autocomplete="off"
+            spellcheck="false">
+        </label>
+        <span class="result-count" id="treeCount" aria-live="polite">27 callables</span>
+        <div class="toolbar-buttons">
+          <button class="ghost-button" id="expandAll" type="button">Expand all</button>
+          <button class="ghost-button" id="collapseAll" type="button">Collapse all</button>
+        </div>
+      </div>
+
+      <div class="tree-layout">
+        <div class="tree-scroll" id="treeScroll">
+          <ul class="call-tree" id="callTree" aria-label="Project function call hierarchy"></ul>
+          <p class="tree-empty" id="treeEmpty" hidden>No function matches that search.</p>
+        </div>
+
+        <aside class="tree-aside" aria-labelledby="howto-title">
+          <div class="aside-card">
+            <p class="kicker">how to read it</p>
+            <h3 id="howto-title">One card, one call site.</h3>
+            <ul class="howto">
+              <li><span class="howto__mark">↳</span> A nested card is called by its parent.</li>
+              <li><span class="howto__mark">↻</span> A repeated card is shared by multiple callers.</li>
+              <li><span class="howto__mark">◇</span> Click a card for callers, callees, and notes.</li>
+              <li><span class="howto__mark">⇉</span> Under <code>run</code>, the three command lanes are alternatives.</li>
+              <li><span class="howto__mark">·</span> Leaves may still call the standard library — open one to see.</li>
+            </ul>
+          </div>
+
+          <div class="aside-card">
+            <p class="kicker">phase legend</p>
+            <ul class="phase-legend">
+              <li><i data-phase="entry" aria-hidden="true"></i> Entry</li>
+              <li><i data-phase="wal" aria-hidden="true"></i> WAL</li>
+              <li><i data-phase="record" aria-hidden="true"></i> Record</li>
+              <li><i data-phase="sort" aria-hidden="true"></i> Ordering</li>
+              <li><i data-phase="db" aria-hidden="true"></i> Memory</li>
+              <li><i data-phase="snapshot" aria-hidden="true"></i> Snapshot</li>
+              <li><i data-phase="diagnostics" aria-hidden="true"></i> Diagnostics</li>
+            </ul>
+          </div>
+
+          <div class="aside-card aside-card--stat">
+            <span class="aside-stat">31</span>
+            <p>internal call edges, up to <strong>6 calls deep</strong> from <code>main</code>.</p>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <section class="panel shell" id="panel-index" role="tabpanel" aria-labelledby="tab-index" tabindex="0" hidden>
+      <div class="section-head">
+        <div>
+          <p class="kicker">03 / reference</p>
+          <h2>Function index</h2>
+        </div>
+        <p class="section-note">All 27 callables, with call counts, caller counts, source lines, and flags. Click a row
+          to inspect it.</p>
+      </div>
+
+      <div class="index-toolbar">
+        <label class="search-field" for="indexSearch">
+          <span class="search-field__icon" aria-hidden="true">⌕</span>
+          <span class="sr-only">Filter functions</span>
+          <input id="indexSearch" type="search" placeholder="Filter by name, role, phase, or tag…" autocomplete="off"
+            spellcheck="false">
+        </label>
+        <span class="result-count" id="indexCount" aria-live="polite">27 rows</span>
+      </div>
+
+      <div class="table-wrap">
+        <table class="function-table">
+          <caption class="sr-only">Functions and methods in HoneyberriDB 0.0.1-alpha.3, with their internal call
+            relationships.</caption>
+          <thead>
+            <tr>
+              <th scope="col" data-sort-key="name"><button type="button" class="sort-button">Function <span
+                    class="sort-arrow" aria-hidden="true">↕</span></button></th>
+              <th scope="col">Role</th>
+              <th scope="col" data-sort-key="phase"><button type="button" class="sort-button">Phase <span
+                    class="sort-arrow" aria-hidden="true">↕</span></button></th>
+              <th scope="col" class="is-numeric" data-sort-key="calls"><button type="button" class="sort-button">Calls
+                  <span class="sort-arrow" aria-hidden="true">↕</span></button></th>
+              <th scope="col" class="is-numeric" data-sort-key="callers"><button type="button"
+                  class="sort-button">Called by <span class="sort-arrow" aria-hidden="true">↕</span></button></th>
+              <th scope="col" class="is-numeric" data-sort-key="line"><button type="button" class="sort-button">Lines
+                  <span class="sort-arrow" aria-hidden="true">↕</span></button></th>
+              <th scope="col">Flags</th>
+            </tr>
+          </thead>
+          <tbody id="indexBody"></tbody>
+        </table>
+      </div>
+      <p class="table-footnote">Call counts include project functions only. Standard-library calls are listed in each
+        function’s detail panel.</p>
+    </section>
+  </main>
+
+  <dialog class="fn-dialog" id="fnDialog" aria-labelledby="fnDialogTitle">
+    <div class="dialog-card">
+      <button class="dialog-close" id="fnDialogClose" type="button" aria-label="Close function details">×</button>
+      <div id="fnDialogBody"></div>
+    </div>
+  </dialog>
+
+  <footer class="site-footer shell">
+    <div class="footer-meta">
+      <p class="footer-brand">HoneyberriDB <span>call map</span></p>
+      <p>Generated from <code>main.go</code> · v0.0.1-alpha.3 · no external dependencies</p>
+    </div>
+    <p class="credit">by: Adarasha Gaihre (aakku106), Nepal on 2026-10-22 03:49:58 NPT</p>
+  </footer>
+</body>
+
+</html>
