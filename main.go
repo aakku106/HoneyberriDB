@@ -23,7 +23,7 @@ const (
 	DBname          = "HoneyberriDB"
 	SoftwareVersion = "0.0.1-alpha.3"
 	WALversion      = "0.0.1-alpha.3"
-	WALname         = DBname + WALversion + ".aakku"
+	WALname         = DBname + WALversion + ".aakku" // We will add WAL. in front of DBname in next version
 	SnapshotName    = "Snapshot." + DBname + WALversion + ".aakku"
 	HistoryName     = "History." + DBname + WALversion + ".aakku"
 
