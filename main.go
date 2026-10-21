@@ -24,7 +24,7 @@ const (
 	SoftwareVersion = "0.0.1-alpha.3"
 	WALversion      = "0.0.1-alpha.3"
 	WALname         = DBname + WALversion + ".aakku"
-	SnapshotName    = "Snapshot." + DBname + SoftwareVersion + ".aakku"
+	SnapshotName    = "Snapshot." + DBname + WALversion + ".aakku"
 	HistoryName     = "History." + DBname + WALversion + ".aakku"
 
 	valueSep = ";;"
