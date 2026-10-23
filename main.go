@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"hash/fnv"
 	"io"
-	"log"
+	// "log"
 	"os"
 	"path/filepath"
 	"sort"
@@ -67,7 +67,7 @@ func realMain() error {
 	if err != nil {
 		return err
 	}
-	warnSkipped(skipped)
+	WarnSkipped(skipped)
 
 	err = run(db, os.Args)
 	if cerr := db.CloseDb(); err == nil { // CloseDb writes a snapshot if anything changed
