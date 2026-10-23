@@ -116,7 +116,7 @@ func run(db *HoneyberriDB, args []string) error {
 		return db.PrintAll() // served from memory, no WAL scan
 
 	case "history", "h":
-		return db.wal.ReadHistory()
+		return db.ReadHistory()
 
 	default:
 		return fmt.Errorf("unknown command %q (use write|read|history)", args[1])
@@ -335,7 +335,8 @@ func WarnSkipped(n int) {
 // ---------- history / h ----------
 
 // ReadHistory prints every value ever written per key and saves it to HistoryName.
-func (wal *HoneyberriWAL) ReadHistory() error {
+func (db *HoneyberriDB) ReadHistory() error {
+	wal := db.wal
 	h := make(map[group]map[string][]string)
 
 	skipped, err := wal.scanWAL(func(r Record) {
