@@ -75,10 +75,7 @@ func (wal *HoneyberriWAL) Close() error { return wal.file.Close() }
 //		}
 //		return err
 //	}
-func (db *HoneyberriDB) Close() {
-	db.wal.Close()
-	db.CloseDb()
-}
+
 func Open() (*HoneyberriDB, error) {
 	wal, err := OpenWAL()
 	if err != nil {
@@ -91,6 +88,10 @@ func Open() (*HoneyberriDB, error) {
 	}
 	WarnSkipped(skipped)
 	return db, nil
+}
+func (db *HoneyberriDB) Close() {
+	db.wal.Close()
+	db.CloseDb()
 }
 
 //
