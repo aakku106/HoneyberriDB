@@ -20,6 +20,7 @@ func main() {
 }
 
 func Open() {
+	h
 }
 
 func write(w http.ResponseWriter, r *http.Request)   {}
