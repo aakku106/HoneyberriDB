@@ -55,45 +55,44 @@ func (wal *HoneyberriWAL) Close() error { return wal.file.Close() }
 // 	}
 // }
 
-// func realMain() error {
-// 	wal, err := OpenWAL()
-// 	if err != nil {
-// 		return err
-// 	}
-// 	defer wal.Close()
+//	func realMain() error {
+//		wal, err := OpenWAL()
+//		if err != nil {
+//			return err
+//		}
+//		defer wal.Close()
 //
-// 	// OpenDb = load snapshot (if any) + replay WAL records newer than it.
-// 	db, skipped, err := OpenDb(wal)
-// 	if err != nil {
-// 		return err
-// 	}
-// 	WarnSkipped(skipped)
+//		// OpenDb = load snapshot (if any) + replay WAL records newer than it.
+//		db, skipped, err := OpenDb(wal)
+//		if err != nil {
+//			return err
+//		}
+//		WarnSkipped(skipped)
 //
-// 	err = run(db, os.Args)
-// 	if cerr := db.CloseDb(); err == nil { // CloseDb writes a snapshot if anything changed
-// 		err = cerr
-// 	}
-// 	return err
-// }
-//
-// func (db *HoneyberriDB) Close() {
-// 	db.wal.Close()
-// 	db.CloseDb()
-// }
-//
-// func Open() (*HoneyberriDB, error) {
-// 	wal, err := OpenWAL()
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	// OpenDb = load snapshot (if any) + replay WAL records newer than it.
-// 	db, skipped, err := OpenDb(wal)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	WarnSkipped(skipped)
-// 	return db, nil
-// }
+//		err = run(db, os.Args)
+//		if cerr := db.CloseDb(); err == nil { // CloseDb writes a snapshot if anything changed
+//			err = cerr
+//		}
+//		return err
+//	}
+func (db *HoneyberriDB) Close() {
+	db.wal.Close()
+	db.CloseDb()
+}
+func Open() (*HoneyberriDB, error) {
+	wal, err := OpenWAL()
+	if err != nil {
+		return nil, err
+	}
+	// OpenDb = load snapshot (if any) + replay WAL records newer than it.
+	db, skipped, err := OpenDb(wal)
+	if err != nil {
+		return nil, err
+	}
+	WarnSkipped(skipped)
+	return db, nil
+}
+
 //
 // func run(db *HoneyberriDB, args []string) error {
 // 	if len(args) < 2 {
