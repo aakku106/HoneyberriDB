@@ -49,11 +49,11 @@ func (wal *HoneyberriWAL) Close() error { return wal.file.Close() }
 
 // ---------- main ----------
 
-func main() {
-	if err := realMain(); err != nil {
-		log.Fatalln(err)
-	}
-}
+// func main() {
+// 	if err := realMain(); err != nil {
+// 		log.Fatalln(err)
+// 	}
+// }
 
 func realMain() error {
 	wal, err := OpenWAL()
@@ -307,7 +307,7 @@ func parseLine(line string) (Record, bool) {
 	return rec, true
 }
 
-func warnSkipped(n int) {
+func WarnSkipped(n int) {
 	if n > 0 {
 		fmt.Fprintf(os.Stderr, "\nskipped %d corrupt/partial line(s)\n", n)
 	}
