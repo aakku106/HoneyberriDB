@@ -55,73 +55,73 @@ func (wal *HoneyberriWAL) Close() error { return wal.file.Close() }
 // 	}
 // }
 
-func realMain() error {
-	wal, err := OpenWAL()
-	if err != nil {
-		return err
-	}
-	defer wal.Close()
-
-	// OpenDb = load snapshot (if any) + replay WAL records newer than it.
-	db, skipped, err := OpenDb(wal)
-	if err != nil {
-		return err
-	}
-	WarnSkipped(skipped)
-
-	err = run(db, os.Args)
-	if cerr := db.CloseDb(); err == nil { // CloseDb writes a snapshot if anything changed
-		err = cerr
-	}
-	return err
-}
-
-func (db *HoneyberriDB) Close() {
-	db.wal.Close()
-	db.CloseDb()
-}
-
-func Open() (*HoneyberriDB, error) {
-	wal, err := OpenWAL()
-	if err != nil {
-		return nil, err
-	}
-	// OpenDb = load snapshot (if any) + replay WAL records newer than it.
-	db, skipped, err := OpenDb(wal)
-	if err != nil {
-		return nil, err
-	}
-	WarnSkipped(skipped)
-	return db, nil
-}
-
-func run(db *HoneyberriDB, args []string) error {
-	if len(args) < 2 {
-		return fmt.Errorf("usage: write|read|history")
-	}
-
-	switch args[1] {
-	case "write", "w":
-		if len(args) < 6 {
-			return fmt.Errorf("usage: write <tapari> <duna> <key> <value...>")
-		}
-		rec, err := db.Set(args[2], args[3], args[4], strings.Join(args[5:], " "))
-		if err != nil {
-			return err
-		}
-		fmt.Printf("\nWrote #%d %s %s  Key: %s  Value: %s\n\n", rec.Seq, rec.Tapari, rec.Duna, rec.Key, rec.Value)
-		return nil
-
-	case "read", "r":
-		return db.PrintAll() // served from memory, no WAL scan
-
-	case "history", "h":
-		return db.ReadHistory()
-
-	default:
-		return fmt.Errorf("unknown command %q (use write|read|history)", args[1])
-	}
-}
+// func realMain() error {
+// 	wal, err := OpenWAL()
+// 	if err != nil {
+// 		return err
+// 	}
+// 	defer wal.Close()
+//
+// 	// OpenDb = load snapshot (if any) + replay WAL records newer than it.
+// 	db, skipped, err := OpenDb(wal)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	WarnSkipped(skipped)
+//
+// 	err = run(db, os.Args)
+// 	if cerr := db.CloseDb(); err == nil { // CloseDb writes a snapshot if anything changed
+// 		err = cerr
+// 	}
+// 	return err
+// }
+//
+// func (db *HoneyberriDB) Close() {
+// 	db.wal.Close()
+// 	db.CloseDb()
+// }
+//
+// func Open() (*HoneyberriDB, error) {
+// 	wal, err := OpenWAL()
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	// OpenDb = load snapshot (if any) + replay WAL records newer than it.
+// 	db, skipped, err := OpenDb(wal)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	WarnSkipped(skipped)
+// 	return db, nil
+// }
+//
+// func run(db *HoneyberriDB, args []string) error {
+// 	if len(args) < 2 {
+// 		return fmt.Errorf("usage: write|read|history")
+// 	}
+//
+// 	switch args[1] {
+// 	case "write", "w":
+// 		if len(args) < 6 {
+// 			return fmt.Errorf("usage: write <tapari> <duna> <key> <value...>")
+// 		}
+// 		rec, err := db.Set(args[2], args[3], args[4], strings.Join(args[5:], " "))
+// 		if err != nil {
+// 			return err
+// 		}
+// 		fmt.Printf("\nWrote #%d %s %s  Key: %s  Value: %s\n\n", rec.Seq, rec.Tapari, rec.Duna, rec.Key, rec.Value)
+// 		return nil
+//
+// 	case "read", "r":
+// 		return db.PrintAll() // served from memory, no WAL scan
+//
+// 	case "history", "h":
+// 		return db.ReadHistory()
+//
+// 	default:
+// 		return fmt.Errorf("unknown command %q (use write|read|history)", args[1])
+// 	}
+// }
 
 // ---------- record ----------
 
