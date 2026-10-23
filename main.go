@@ -369,7 +369,7 @@ func (db *HoneyberriDB) ReadHistory() error {
 		return err
 	}
 
-	warnSkipped(skipped)
+	WarnSkipped(skipped)
 	return nil
 }
 
