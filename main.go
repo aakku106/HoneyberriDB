@@ -76,6 +76,25 @@ func realMain() error {
 	return err
 }
 
+func (db *HoneyberriDB) Close() {
+	db.wal.Close()
+	db.CloseDb()
+}
+
+func Open() (*HoneyberriDB, error) {
+	wal, err := OpenWAL()
+	if err != nil {
+		return nil, err
+	}
+	// OpenDb = load snapshot (if any) + replay WAL records newer than it.
+	db, skipped, err := OpenDb(wal)
+	if err != nil {
+		return nil, err
+	}
+	WarnSkipped(skipped)
+	return db, nil
+}
+
 func run(db *HoneyberriDB, args []string) error {
 	if len(args) < 2 {
 		return fmt.Errorf("usage: write|read|history")
