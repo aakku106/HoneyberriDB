@@ -605,3 +605,61 @@ func (db *HoneyberriDB) loadSnapshotLocked(filename string) error {
 	db.layout, db.lastSeq, db.snapSeq = s.Layout, s.Seq, s.Seq
 	return nil
 }
+
+// for server
+
+// GetFullDump returns a copy of the entire database layout for HTTP/API use.
+func (db *HoneyberriDB) GetFullDump() layout {
+	db.mu.RLock()
+	defer db.mu.RUnlock()
+
+	// Deep copy to avoid race conditions outside the lock
+	dump := make(layout)
+	for t, dunas := range db.layout {
+		dump[t] = make(map[string]map[string]entry)
+		for d, keys := range dunas {
+			dump[t][d] = make(map[string]entry)
+			for k, e := range keys {
+				dump[t][d][k] = e
+			}
+		}
+	}
+	return dump
+}
+
+// GetTapari returns all dunas and key-values for a specific Tapari.
+func (db *HoneyberriDB) GetTapari(tapari string) (map[string]map[string]string, bool) {
+	db.mu.RLock()
+	defer db.mu.RUnlock()
+
+	dunas, ok := db.layout[tapari]
+	if !ok {
+		return nil, false
+	}
+
+	result := make(map[string]map[string]string)
+	for duna, keys := range dunas {
+		result[duna] = make(map[string]string)
+		for k, e := range keys {
+			result[duna][k] = e.Value
+		}
+	}
+	return result, true
+}
+
+// GetDuna returns all key-value pairs for a specific Tapari and Duna.
+func (db *HoneyberriDB) GetDuna(tapari, duna string) (map[string]string, bool) {
+	db.mu.RLock()
+	defer db.mu.RUnlock()
+
+	keys, ok := db.layout[tapari][duna]
+	if !ok {
+		return nil, false
+	}
+
+	result := make(map[string]string)
+	for k, e := range keys {
+		result[k] = e.Value
+	}
+	return result, true
+}
