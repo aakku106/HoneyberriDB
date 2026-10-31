@@ -6,3 +6,6 @@
 5 riz_tapari momo price ;;150;; 1792872615344035000 314dd6e5a1999de5caab8617ede9edb1
 6 animal_tapari dog_duna name ;;jawU_waa;; 1793465815561307000 0b10d89bc2094aa858d9f49e061bbe3f
 7 animal_tapari dog_duna age ;;4 months;; 1793465831850303000 ca2b4c7a7eafd3e81553c97dc9d84459
+8 animal_tapari cat_duna age ;;6 years;; 1793467256184620000 56e31984a8e0c348950d56e180caf16c
+9 animal_tapari cat_duna brother ;;fukuti;; 1793467487229437000 f7e69de953ea9266ee5ca0733dd231d0
+10 animal_tapari cat_duna other_siblings ;;yes, but no data;; 1793467578750542000 3be0c6c1941b9ba258893b7cd384d14e
