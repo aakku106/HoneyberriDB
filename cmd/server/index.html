@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HoneyberriDB Dashboard</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, -apple-system, sans-serif;
+    }
+
+    body {
+      background: #0f172a;
+      color: #f8fafc;
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+
+    h1,
+    h2 {
+      color: #fbbf24;
+    }
+
+    .card {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+    }
+
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+
+    label {
+      font-size: 0.85rem;
+      color: #94a3b8;
+      font-weight: 600;
+    }
+
+    input {
+      background: #0f172a;
+      border: 1px solid #475569;
+      color: #fff;
+      padding: 0.6rem;
+      border-radius: 4px;
+      outline: none;
+    }
+
+    input:focus {
+      border-color: #fbbf24;
+    }
+
+    button {
+      background: #fbbf24;
+      color: #0f172a;
+      border: none;
+      padding: 0.7rem 1.2rem;
+      border-radius: 4px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    button:hover {
+      background: #f59e0b;
+    }
+
+    .btn-secondary {
+      background: #334155;
+      color: #f8fafc;
+    }
+
+    .btn-secondary:hover {
+      background: #475569;
+    }
+
+    .actions {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 0.5rem;
+    }
+
+    th,
+    td {
+      border: 1px solid #334155;
+      padding: 0.75rem;
+      text-align: left;
+    }
+
+    th {
+      background: #0f172a;
+      color: #fbbf24;
+    }
+
+    tr:nth-child(even) {
+      background: #0f172a33;
+    }
+
+    .status {
+      font-size: 0.9rem;
+      padding: 0.5rem;
+      border-radius: 4px;
+      display: none;
+    }
+
+    .status.success {
+      background: #065f46;
+      color: #34d399;
+      display: block;
+    }
+
+    .status.error {
+      background: #881337;
+      color: #f87171;
+      display: block;
+    }
+  </style>
+</head>
+
+<body>
+
+  <h1>🍯 HoneyberriDB Manager</h1>
+
+  <!-- WRITE FORM -->
+  <div class="card">
+    <h2>Write Entry</h2>
+    <div id="writeStatus" class="status"></div>
+    <div class="form-grid">
+      <div class="input-group">
+        <label>Tapari</label>
+        <input type="text" id="wTapari" placeholder="e.g. breakfast">
+      </div>
+      <div class="input-group">
+        <label>Duna</label>
+        <input type="text" id="wDuna" placeholder="e.g. momo">
+      </div>
+      <div class="input-group">
+        <label>Key</label>
+        <input type="text" id="wKey" placeholder="e.g. price">
+      </div>
+      <div class="input-group">
+        <label>Value</label>
+        <input type="text" id="wValue" placeholder="e.g. 150">
+      </div>
+    </div>
+    <button onclick="writeRecord()">Submit Entry</button>
+  </div>
+
+  <!-- QUERY SECTION -->
+  <div class="card">
+    <h2>Query Data</h2>
+    <div class="form-grid">
+      <div class="input-group">
+        <label>Tapari Filter</label>
+        <input type="text" id="qTapari" placeholder="Tapari name">
+      </div>
+      <div class="input-group">
+        <label>Duna Filter</label>
+        <input type="text" id="qDuna" placeholder="Duna name">
+      </div>
+      <div class="input-group">
+        <label>Key Filter</label>
+        <input type="text" id="qKey" placeholder="Key name">
+      </div>
+    </div>
+    <div class="actions">
+      <button onclick="fetchAll()">Read All</button>
+      <button class="btn-secondary" onclick="fetchTapari()">Read Tapari</button>
+      <button class="btn-secondary" onclick="fetchDuna()">Read Duna</button>
+      <button class="btn-secondary" onclick="fetchKey()">Read Key</button>
+    </div>
+  </div>
+
+  <!-- DATA TABLE -->
+  <div class="card">
+    <h2>Stored Records</h2>
+    <div id="readStatus" class="status"></div>
+    <table>
+      <thead>
+        <tr>
+          <th>Tapari</th>
+          <th>Duna</th>
+          <th>Key</th>
+          <th>Value</th>
+          <th>Timestamp</th>
+        </tr>
+      </thead>
+      <tbody id="dataTable">
+        <tr>
+          <td colspan="5" style="text-align:center; color: #64748b;">No data loaded yet</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <script>
+    const API_BASE = "http://localhost:6106";
+
+    function showStatus(id, msg, isError = false) {
+      const el = document.getElementById(id);
+      el.textContent = msg;
+      el.className = `status ${isError ? 'error' : 'success'}`;
+    }
+
+    function clearStatus(id) {
+      const el = document.getElementById(id);
+      el.className = 'status';
+      el.textContent = '';
+    }
+
+    async function writeRecord() {
+      clearStatus('writeStatus');
+      const tapari = document.getElementById('wTapari').value.trim();
+      const duna = document.getElementById('wDuna').value.trim();
+      const key = document.getElementById('wKey').value.trim();
+      const value = document.getElementById('wValue').value.trim();
+
+      if (!tapari || !duna || !key) {
+        showStatus('writeStatus', 'Tapari, Duna, and Key are required fields.', true);
+        return;
+      }
+
+      try {
+        const res = await fetch(`${API_BASE}/write`, {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({tapari, duna, key, value})
+        });
+
+        if (!res.ok) throw new Error(await res.text());
+        const data = await res.json();
+        showStatus('writeStatus', `Successfully written! Sequence #${data.seq}`);
+
+        // Clear input values
+        document.getElementById('wKey').value = '';
+        document.getElementById('wValue').value = '';
+
+        fetchAll(); // Refresh table automatically
+      } catch (err) {
+        showStatus('writeStatus', `Failed to write: ${err.message}`, true);
+      }
+    }
+
+    function renderTable(rows) {
+      const tbody = document.getElementById('dataTable');
+      if (!rows.length) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color: #64748b;">No records found</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = rows.map(r => `
+        <tr>
+          <td><strong>${r.tapari}</strong></td>
+          <td>${r.duna}</td>
+          <td>${r.key}</td>
+          <td>${r.value}</td>
+          <td>${r.nanos ? new Date(r.nanos / 1e6).toISOString().replace('T', ' ').slice(0, 19) : '-'}</td>
+        </tr>
+      `).join('');
+    }
+
+    async function fetchAll() {
+      clearStatus('readStatus');
+      try {
+        const res = await fetch(`${API_BASE}/readAll`);
+        if (!res.ok) throw new Error(await res.text());
+        const layout = await res.json();
+
+        const rows = [];
+        for (const [tapari, dunas] of Object.entries(layout)) {
+          for (const [duna, keys] of Object.entries(dunas)) {
+            for (const [key, entry] of Object.entries(keys)) {
+              rows.push({tapari, duna, key, value: entry.v, nanos: entry.t});
+            }
+          }
+        }
+        renderTable(rows);
+      } catch (err) {
+        showStatus('readStatus', `Read failed: ${err.message}`, true);
+      }
+    }
+
+    async function fetchTapari() {
+      clearStatus('readStatus');
+      const tapari = document.getElementById('qTapari').value.trim();
+      if (!tapari) return showStatus('readStatus', 'Enter a Tapari filter name.', true);
+
+      try {
+        const res = await fetch(`${API_BASE}/tapari/${encodeURIComponent(tapari)}`);
+        if (!res.ok) throw new Error(await res.text());
+        const dunas = await res.json();
+
+        const rows = [];
+        for (const [duna, keys] of Object.entries(dunas)) {
+          for (const [key, val] of Object.entries(keys)) {
+            rows.push({tapari, duna, key, value: val});
+          }
+        }
+        renderTable(rows);
+      } catch (err) {
+        showStatus('readStatus', `Read Tapari failed: ${err.message}`, true);
+      }
+    }
+
+    async function fetchDuna() {
+      clearStatus('readStatus');
+      const tapari = document.getElementById('qTapari').value.trim();
+      const duna = document.getElementById('qDuna').value.trim();
+      if (!tapari || !duna) return showStatus('readStatus', 'Both Tapari and Duna filter names are required.', true);
+
+      try {
+        const res = await fetch(`${API_BASE}/duna/${encodeURIComponent(tapari)}/${encodeURIComponent(duna)}`);
+        if (!res.ok) throw new Error(await res.text());
+        const keys = await res.json();
+
+        const rows = Object.entries(keys).map(([key, value]) => ({tapari, duna, key, value}));
+        renderTable(rows);
+      } catch (err) {
+        showStatus('readStatus', `Read Duna failed: ${err.message}`, true);
+      }
+    }
+
+    async function fetchKey() {
+      clearStatus('readStatus');
+      const tapari = document.getElementById('qTapari').value.trim();
+      const duna = document.getElementById('qDuna').value.trim();
+      const key = document.getElementById('qKey').value.trim();
+      if (!tapari || !duna || !key) return showStatus('readStatus', 'Tapari, Duna, and Key filters are all required.', true);
+
+      try {
+        const res = await fetch(`${API_BASE}/key/${encodeURIComponent(tapari)}/${encodeURIComponent(duna)}/${encodeURIComponent(key)}`);
+        if (!res.ok) throw new Error(await res.text());
+        const data = await res.json();
+
+        renderTable([{tapari: data.tapari, duna: data.duna, key: data.key, value: data.value}]);
+      } catch (err) {
+        showStatus('readStatus', `Read Key failed: ${err.message}`, true);
+      }
+    }
+
+    // Load initial data on startup
+    fetchAll();
+  </script>
+</body>
+
+</html>
