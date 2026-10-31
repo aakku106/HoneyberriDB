@@ -50,6 +50,9 @@ func main() {
 }
 
 func (app *App) writeHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 	var req WriteRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -68,6 +71,9 @@ func (app *App) writeHandler(w http.ResponseWriter, r *http.Request) {
 
 // 1. ReadAll: Spits out everything in DB as JSON
 func (app *App) readAllHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 	dump := app.db.GetFullDump()
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(dump)
@@ -75,6 +81,9 @@ func (app *App) readAllHandler(w http.ResponseWriter, r *http.Request) {
 
 // 2. ReadTapari: Read everything inside a specific Tapari
 func (app *App) readTapariHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 	tapari := r.PathValue("tapari")
 	data, found := app.db.GetTapari(tapari)
 	if !found {
@@ -87,6 +96,9 @@ func (app *App) readTapariHandler(w http.ResponseWriter, r *http.Request) {
 
 // 3. ReadDuna: Read every key-value pair from a specific Duna
 func (app *App) readDunaHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 	tapari := r.PathValue("tapari")
 	duna := r.PathValue("duna")
 	data, found := app.db.GetDuna(tapari, duna)
@@ -100,6 +112,9 @@ func (app *App) readDunaHandler(w http.ResponseWriter, r *http.Request) {
 
 // 4. ReadKey: Just the value of that specific key
 func (app *App) readKeyHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 	tapari := r.PathValue("tapari")
 	duna := r.PathValue("duna")
 	key := r.PathValue("key")
