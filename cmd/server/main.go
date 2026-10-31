@@ -47,18 +47,20 @@ func main() {
 	mux.HandleFunc("GET /key/{tapari}/{duna}/{key}", app.readKeyHandler)
 
 	// Optional Web Management Dashboard
-	if *managerSite {
-		mux.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
-			if r.URL.Path != "/" {
-				http.NotFound(w, r)
-				return
-			}
-			w.Header().Set("Content-Type", "text/html; charset=utf-8")
-			w.WriteHeader(http.StatusOK)
-			w.Write(managerHTML)
-		})
-		fmt.Println("Web Manager Dashboard enabled at http://localhost:6106/")
-	}
+	go func() {
+		if *managerSite {
+			mux.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
+				if r.URL.Path != "/" {
+					http.NotFound(w, r)
+					return
+				}
+				w.Header().Set("Content-Type", "text/html; charset=utf-8")
+				w.WriteHeader(http.StatusOK)
+				w.Write(managerHTML)
+			})
+			fmt.Println("Web Manager Dashboard enabled at http://localhost:6106/")
+		}
+	}()
 
 	server := http.Server{
 		Addr:    ":6106",
